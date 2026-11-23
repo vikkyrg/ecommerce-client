@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, Tag, ShieldCheck, Truck } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, Tag, ShieldCheck, Truck, Check } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 
 export default function CartDrawer({ onProceedCheckout }) {
@@ -41,11 +41,11 @@ export default function CartDrawer({ onProceedCheckout }) {
         onClick={() => setIsCartOpen(false)}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10">
-        <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-4 sm:pl-10">
+        <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col h-full">
           
           {/* Header */}
-          <div className="p-4 sm:p-5 bg-[#171717] text-white flex items-center justify-between border-b border-neutral-800">
+          <div className="p-4 sm:p-5 bg-[#171717] text-white flex items-center justify-between border-b border-neutral-800 flex-shrink-0">
             <div className="flex items-center gap-2.5">
               <ShoppingBag className="w-5 h-5 text-[#ffdf9c]" />
               <h2 className="font-['Manrope'] font-bold text-base sm:text-lg tracking-wide">
@@ -76,7 +76,7 @@ export default function CartDrawer({ onProceedCheckout }) {
                 </p>
                 <button
                   onClick={() => setIsCartOpen(false)}
-                  className="mt-5 inline-flex items-center gap-2 bg-black text-[#ffdf9c] text-xs font-semibold px-4 py-2.5 rounded-md hover:bg-neutral-800 transition-colors"
+                  className="mt-5 inline-flex items-center gap-2 bg-black text-[#ffdf9c] text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-neutral-800 transition-colors cursor-pointer"
                 >
                   Continue Shopping
                 </button>
@@ -85,12 +85,12 @@ export default function CartDrawer({ onProceedCheckout }) {
               cartItems.map(item => (
                 <div
                   key={item.id}
-                  className="flex gap-3 p-3 bg-neutral-50 rounded-lg border border-neutral-200"
+                  className="flex gap-3 p-3 bg-neutral-50 rounded-xl border border-neutral-200"
                 >
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-16 h-16 object-contain bg-white rounded border border-neutral-200 p-1 flex-shrink-0"
+                    className="w-16 h-16 object-contain bg-white rounded-lg border border-neutral-200 p-1 flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
@@ -100,32 +100,30 @@ export default function CartDrawer({ onProceedCheckout }) {
                         </h4>
                         <button
                           onClick={() => removeFromCart(item.id)}
-                          className="text-neutral-400 hover:text-rose-600 p-0.5 transition-colors cursor-pointer"
+                          className="text-neutral-400 hover:text-rose-600 p-1 cursor-pointer transition-colors"
                           title="Remove item"
                           aria-label="Remove item"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      <span className="text-[10px] text-neutral-500 font-medium uppercase tracking-wider block mt-0.5">
+                      <span className="text-[10px] text-neutral-400 block font-mono mt-0.5 truncate">
                         {item.brand} {item.size && `• ${item.size}`}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center border border-neutral-300 rounded bg-white">
+                    <div className="flex justify-between items-center mt-2 pt-1 border-t border-neutral-200">
+                      <div className="flex items-center border border-neutral-300 rounded-md bg-white">
                         <button
-                          onClick={() => updateQuantity(item.id, -1)}
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
                           className="px-2 py-0.5 text-neutral-600 hover:bg-neutral-100 cursor-pointer"
                           aria-label="Decrease quantity"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="px-2 text-xs font-bold text-black min-w-[20px] text-center">
-                          {item.quantity}
-                        </span>
+                        <span className="px-2 text-xs font-bold text-black">{item.quantity}</span>
                         <button
-                          onClick={() => updateQuantity(item.id, 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           className="px-2 py-0.5 text-neutral-600 hover:bg-neutral-100 cursor-pointer"
                           aria-label="Increase quantity"
                         >
@@ -133,11 +131,9 @@ export default function CartDrawer({ onProceedCheckout }) {
                         </button>
                       </div>
 
-                      <div className="text-right">
-                        <span className="text-sm font-bold text-black font-['Manrope']">
-                          ₹{(item.price * item.quantity).toLocaleString('en-IN')}
-                        </span>
-                      </div>
+                      <span className="font-bold text-xs text-black font-['Manrope']">
+                        ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -145,86 +141,52 @@ export default function CartDrawer({ onProceedCheckout }) {
             )}
           </div>
 
-          {/* Footer Checkout Calculation */}
+          {/* Footer Checkout Actions */}
           {cartItems.length > 0 && (
-            <div className="p-4 sm:p-5 bg-[#f9f9f7] border-t border-neutral-200 space-y-3">
-              
-              {/* Promo Coupon Form */}
-              <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                <div className="relative flex-1">
-                  <Tag className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={coupon}
-                    onChange={e => setCoupon(e.target.value)}
-                    placeholder="Enter Coupon (try STONE10)"
-                    className="w-full bg-white text-xs pl-8 pr-2 py-2 rounded border border-neutral-300 uppercase focus:outline-none focus:border-black"
-                  />
+            <div className="p-4 sm:p-5 border-t border-neutral-200 bg-neutral-50/70 space-y-3 flex-shrink-0">
+              <div className="space-y-1.5 text-xs text-neutral-600">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span className="font-semibold text-black">₹{cartSubtotal.toLocaleString('en-IN')}</span>
                 </div>
-                <button
-                  type="submit"
-                  className="bg-neutral-800 hover:bg-black text-white text-xs font-semibold px-3 py-2 rounded transition-colors"
-                >
-                  Apply
-                </button>
-              </form>
-
-              {couponError && (
-                <p className="text-[11px] text-rose-600">{couponError}</p>
-              )}
-              {appliedDiscount > 0 && (
-                <p className="text-[11px] text-emerald-700 font-semibold">
-                  Coupon applied: ₹{appliedDiscount.toLocaleString('en-IN')} saved!
-                </p>
-              )}
-
-              {/* Order breakdown */}
-              <div className="space-y-1.5 text-xs pt-1 border-t border-neutral-200">
-                <div className="flex justify-between text-neutral-600">
-                  <span>Subtotal</span>
-                  <span className="font-semibold text-neutral-900">
-                    ₹{cartSubtotal.toLocaleString('en-IN')}
+                <div className="flex justify-between">
+                  <span>Shipping:</span>
+                  <span className="font-semibold text-black">
+                    {deliveryCharge === 0 ? (
+                      <span className="text-emerald-700 font-bold uppercase text-[10px]">FREE</span>
+                    ) : (
+                      `₹${deliveryCharge}`
+                    )}
                   </span>
                 </div>
-                {appliedDiscount > 0 && (
-                  <div className="flex justify-between text-emerald-700 font-semibold">
-                    <span>Coupon Discount</span>
-                    <span>-₹{appliedDiscount.toLocaleString('en-IN')}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-neutral-600">
-                  <span>Delivery</span>
-                  {deliveryCharge === 0 ? (
-                    <span className="text-emerald-700 font-semibold">FREE (Orders &gt; ₹1,999)</span>
-                  ) : (
-                    <span className="font-semibold text-neutral-900">₹{deliveryCharge}</span>
-                  )}
-                </div>
-                <div className="flex justify-between text-sm sm:text-base font-bold text-black pt-2 border-t border-neutral-300 font-['Manrope']">
-                  <span>Total</span>
-                  <span>₹{finalTotal.toLocaleString('en-IN')}</span>
+                <div className="flex justify-between pt-2 border-t border-neutral-200 text-sm font-bold text-black">
+                  <span>Total:</span>
+                  <span className="font-['Manrope'] text-base text-black">
+                    ₹{finalTotal.toLocaleString('en-IN')}
+                  </span>
                 </div>
               </div>
 
-              {/* Direct Checkout Button */}
-              <div className="pt-1.5 space-y-2">
-                <button
-                  onClick={() => {
-                    setIsCartOpen(false);
-                    if (onProceedCheckout) onProceedCheckout({ subtotal: cartSubtotal, discount: appliedDiscount, delivery: deliveryCharge, total: finalTotal });
-                  }}
-                  className="w-full bg-[#171717] text-[#ffdf9c] hover:bg-black font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-[0.98]"
-                >
-                  <span>Proceed to Checkout</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-                <div className="flex items-center justify-center gap-1.5 text-[11px] text-neutral-500">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Secure 256-Bit Encrypted Checkout</span>
-                </div>
-              </div>
+              <button
+                onClick={() => {
+                  setIsCartOpen(false);
+                  if (onProceedCheckout) {
+                    onProceedCheckout({
+                      subtotal: cartSubtotal,
+                      shipping: deliveryCharge,
+                      discount: appliedDiscount,
+                      total: finalTotal
+                    });
+                  }
+                }}
+                className="w-full bg-black hover:bg-neutral-900 text-[#ffdf9c] font-bold text-xs sm:text-sm py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-98"
+              >
+                <span>Proceed to Order</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
           )}
+
         </div>
       </div>
     </div>

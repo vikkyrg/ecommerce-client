@@ -32,7 +32,7 @@ export default function CheckoutModal({ isOpen, onClose, summary }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
@@ -40,7 +40,7 @@ export default function CheckoutModal({ isOpen, onClose, summary }) {
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl z-10 overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-2xl bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl z-10 overflow-hidden max-h-[92vh] sm:max-h-[90vh] flex flex-col animate-in fade-in slide-in-from-bottom sm:slide-in-from-top duration-200">
         {/* Header */}
         <div className="p-4 sm:p-5 bg-[#171717] text-white flex items-center justify-between">
           <div className="flex items-center gap-2">

@@ -21,14 +21,14 @@ export default function AccountModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl z-10 overflow-hidden">
+      <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl z-10 overflow-hidden max-h-[92vh] sm:max-h-[90vh] overflow-y-auto animate-in fade-in slide-in-from-bottom sm:slide-in-from-top duration-200">
         {/* Header */}
         <div className="p-4 sm:p-5 bg-[#171717] text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
