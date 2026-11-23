@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { User, Package, MapPin, Heart, LogOut, ShieldCheck, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
+import { fetchMyOrders } from '../services/api';
 
 export default function Account() {
   const { user, logout, updateProfile } = useAuth();
@@ -19,13 +20,7 @@ export default function Account() {
       return;
     }
 
-    const token = localStorage.getItem('ns_stone_token');
-    const BASE = import.meta.env.VITE_API_URL || '';
-    const API_URL = BASE ? `${BASE.replace(/\/+$/, '')}/api` : '/api';
-    fetch(`${API_URL}/orders/myorders`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.json())
+    fetchMyOrders()
       .then(d => setOrders(Array.isArray(d) ? d : []))
       .catch(() => setOrders([]))
       .finally(() => setLoadingOrders(false));

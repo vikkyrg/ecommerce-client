@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { loginUserApi, registerUserApi, updateProfileApi } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -24,16 +25,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const BASE = import.meta.env.VITE_API_URL || '';
-      const API_URL = BASE ? `${BASE.replace(/\/+$/, '')}/api` : '/api';
-      const res = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Invalid email or password');
-
+      const data = await loginUserApi(email, password);
       setUser(data);
       setToken(data.token);
       localStorage.setItem('ns_stone_token', data.token);
@@ -46,16 +38,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, phone, password) => {
     try {
-      const BASE = import.meta.env.VITE_API_URL || '';
-      const API_URL = BASE ? `${BASE.replace(/\/+$/, '')}/api` : '/api';
-      const res = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Registration failed');
-
+      const data = await registerUserApi(name, email, phone, password);
       setUser(data);
       setToken(data.token);
       localStorage.setItem('ns_stone_token', data.token);
@@ -75,23 +58,10 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async updatedData => {
     try {
-      const BASE = import.meta.env.VITE_API_URL || '';
-      const API_URL = BASE ? `${BASE.replace(/\/+$/, '')}/api` : '/api';
-      const res = await fetch(`${API_URL}/auth/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(updatedData)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Update failed');
-
-      const fullUser = { ...user, ...data };
-      setUser(fullUser);
-      localStorage.setItem('ns_stone_user', JSON.stringify(fullUser));
-      return { success: true, user: fullUser };
+      const data = await updateProfileApi(updatedData);
+      setUser(data);
+      localStorage.setItem('ns_stone_user', JSON.stringify(data));
+      return { success: true, user: data };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -104,7 +74,6 @@ export const AuthProvider = ({ children }) => {
         token,
         loading,
         isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin',
         login,
         register,
         logout,
