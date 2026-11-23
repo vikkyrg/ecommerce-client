@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, ShoppingBag, Heart, User, Menu, Phone, MessageCircle } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
@@ -7,9 +7,19 @@ import businessConfig from '../../config/businessConfig';
 
 export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
   const { cartCount, setIsCartOpen } = useCart();
   const { wishlistCount } = useWishlist();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleSearch = e => {
     e.preventDefault();
@@ -21,7 +31,13 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#ffffff] border-b border-[#e2e3e1] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+    <header
+      className={`sticky top-0 z-40 bg-white transition-all duration-300 ease-out border-b ${
+        isScrolled
+          ? 'border-[#d0d2d0] shadow-[0_4px_20px_rgba(0,0,0,0.06)]'
+          : 'border-[#e2e3e1] shadow-[0_1px_3px_rgba(0,0,0,0.03)]'
+      }`}
+    >
       <div className="site-container">
         <div className="flex items-center justify-between h-18 sm:h-20 gap-3 sm:gap-6 lg:gap-8">
           
@@ -29,7 +45,7 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <button
               onClick={onOpenMobileMenu}
-              className="lg:hidden p-2 -ml-2 rounded-lg text-neutral-800 hover:text-black hover:bg-neutral-100 transition-colors"
+              className="lg:hidden p-2 -ml-2 rounded-lg text-neutral-800 hover:text-black hover:bg-neutral-100 transition-colors cursor-pointer"
               aria-label="Toggle navigation menu"
             >
               <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -39,7 +55,7 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
               <img
                 src="/logo.jpeg"
                 alt={businessConfig.companyName}
-                className="h-10 sm:h-11 w-auto object-contain rounded-sm transition-transform group-hover:scale-102"
+                className="h-10 sm:h-11 w-auto object-contain rounded-sm transition-transform duration-300 group-hover:scale-103"
                 onError={e => {
                   e.target.onerror = null;
                   e.target.style.display = 'none';
@@ -54,7 +70,7 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
                 NS
               </div>
               <div className="flex flex-col justify-center">
-                <span className="font-['Manrope'] font-bold text-base sm:text-lg lg:text-xl tracking-tight text-black leading-tight">
+                <span className="font-['Manrope'] font-bold text-base sm:text-lg lg:text-xl tracking-tight text-black leading-tight group-hover:text-amber-900 transition-colors">
                   {businessConfig.companyName}
                 </span>
                 <span className="font-['Inter'] text-[9px] sm:text-[10px] tracking-wider uppercase text-neutral-500 font-semibold leading-tight">
@@ -80,7 +96,7 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
               />
               <button
                 type="submit"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-black text-white hover:bg-neutral-800 text-xs font-semibold px-3 py-1.5 rounded-md transition-colors cursor-pointer"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-black text-white hover:bg-neutral-800 text-xs font-semibold px-3 py-1.5 rounded-md transition-colors cursor-pointer active:scale-95"
               >
                 Search
               </button>
@@ -94,7 +110,7 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
               href={businessConfig.whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden 2xl:flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              className="hidden 2xl:flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-102"
               title="Chat on WhatsApp"
             >
               <MessageCircle className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
@@ -132,7 +148,7 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
 
             {/* Wishlist Link */}
             <Link
-              to="/products"
+              to="/wishlist"
               className="relative p-2 rounded-lg text-neutral-700 hover:text-black hover:bg-neutral-100 transition-colors flex items-center justify-center"
               title="My Wishlist"
               aria-label="Wishlist"
@@ -148,13 +164,13 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
             {/* Shopping Cart Button */}
             <button
               onClick={() => setIsCartOpen(true)}
-              className="flex items-center gap-2 bg-black hover:bg-neutral-800 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all shadow-xs group cursor-pointer"
+              className="flex items-center gap-2 bg-black hover:bg-neutral-800 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all shadow-xs group cursor-pointer active:scale-95"
               aria-label="Shopping Cart"
             >
               <div className="relative flex items-center justify-center">
                 <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-[#ffdf9c] group-hover:scale-105 transition-transform" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2 bg-amber-500 text-black text-[10px] font-extrabold rounded-full h-4 w-4 flex items-center justify-center leading-none">
+                  <span className="absolute -top-1.5 -right-2 bg-amber-500 text-black text-[10px] font-extrabold rounded-full h-4 w-4 flex items-center justify-center leading-none animate-pulse">
                     {cartCount}
                   </span>
                 )}

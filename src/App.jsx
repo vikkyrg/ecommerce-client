@@ -8,6 +8,7 @@ import MobileMenu from './components/layout/MobileMenu';
 import CartDrawer from './components/cart/CartDrawer';
 import CheckoutModal from './components/checkout/CheckoutModal';
 import AccountModal from './components/account/AccountModal';
+import ScrollToTop from './components/common/ScrollToTop';
 
 // Pages
 import Home from './pages/Home';
@@ -61,6 +62,7 @@ export default function App() {
       <CartProvider>
         <WishlistProvider>
           <Router>
+            <ScrollToTop />
             <div className="flex flex-col min-h-screen bg-[#f9f9f7] font-['Inter'] text-[#1a1c1b]">
               <AnnouncementBar />
               <Header

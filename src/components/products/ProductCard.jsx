@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingBag, Star, Zap } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Zap, Check } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 
@@ -8,6 +8,15 @@ export default function ProductCard({ product }) {
   const { addToCart, setIsCartOpen } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const isWishlisted = isInWishlist(product.id);
+  const [addedAnimation, setAddedAnimation] = useState(false);
+
+  const handleAddToCart = e => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart(product, 1);
+    setAddedAnimation(true);
+    setTimeout(() => setAddedAnimation(false), 900);
+  };
 
   const handleBuyNow = e => {
     e.preventDefault();
@@ -17,16 +26,16 @@ export default function ProductCard({ product }) {
   };
 
   return (
-    <div className="group relative bg-[#ffffff] rounded-lg border border-[#e2e3e1] shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:border-neutral-400 transition-all duration-300 flex flex-col h-full overflow-hidden">
+    <div className="group relative bg-[#ffffff] rounded-xl border border-[#e2e3e1] shadow-2xs hover:shadow-lg hover:border-neutral-400 transition-all duration-350 ease-out flex flex-col h-full overflow-hidden transform hover:-translate-y-1">
       
       {/* Top Badges & Wishlist Overlay */}
       <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 pointer-events-none">
         {product.discount ? (
-          <span className="bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase shadow-2xs">
+          <span className="bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase shadow-2xs transition-transform group-hover:scale-105">
             {product.discount}% OFF
           </span>
         ) : product.badge ? (
-          <span className="bg-[#171717] text-[#ffdf9c] text-[10px] font-bold px-2.5 py-1 rounded tracking-wider uppercase shadow-2xs">
+          <span className="bg-[#171717] text-[#ffdf9c] text-[10px] font-bold px-2.5 py-1 rounded tracking-wider uppercase shadow-2xs transition-transform group-hover:scale-105">
             {product.badge}
           </span>
         ) : (
@@ -39,15 +48,15 @@ export default function ProductCard({ product }) {
             e.stopPropagation();
             toggleWishlist(product);
           }}
-          className={`pointer-events-auto p-1.5 rounded-full backdrop-blur-xs transition-colors shadow-2xs cursor-pointer ${
+          className={`pointer-events-auto p-1.5 rounded-full backdrop-blur-xs transition-all duration-200 shadow-2xs cursor-pointer active:scale-90 ${
             isWishlisted
-              ? 'bg-rose-50 text-rose-600 hover:bg-rose-100'
-              : 'bg-white/90 text-neutral-400 hover:text-black hover:bg-white border border-neutral-200'
+              ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 scale-105'
+              : 'bg-white/90 text-neutral-400 hover:text-rose-600 hover:bg-white border border-neutral-200 hover:scale-105'
           }`}
-          title="Add to Wishlist"
+          title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
           aria-label="Save to Wishlist"
         >
-          <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-rose-600' : ''}`} />
+          <Heart className={`w-4 h-4 transition-transform ${isWishlisted ? 'fill-rose-600 scale-105' : ''}`} />
         </button>
       </div>
 
@@ -59,8 +68,11 @@ export default function ProductCard({ product }) {
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-full max-h-[180px] sm:max-h-[210px] object-contain group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full max-h-[180px] sm:max-h-[210px] object-contain transition-transform duration-500 ease-out group-hover:scale-106"
           loading="lazy"
+          onError={e => {
+            e.target.style.opacity = '0.7';
+          }}
         />
       </Link>
 
@@ -126,16 +138,29 @@ export default function ProductCard({ product }) {
           {/* Dual Direct B2C Buttons: Add to Cart & Buy Now */}
           <div className="grid grid-cols-2 gap-2 mt-2.5">
             <button
-              onClick={() => addToCart(product, 1)}
-              className="w-full bg-[#f4f4f2] hover:bg-neutral-200 text-black font-['Inter'] text-[11px] sm:text-xs font-semibold py-2 px-2.5 rounded-md flex items-center justify-center gap-1.5 transition-colors border border-neutral-300 cursor-pointer active:scale-[0.98]"
+              onClick={handleAddToCart}
+              className={`w-full font-['Inter'] text-[11px] sm:text-xs font-semibold py-2 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all duration-200 border cursor-pointer active:scale-95 ${
+                addedAnimation
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-[#f4f4f2] hover:bg-neutral-200 text-black border-neutral-300'
+              }`}
             >
-              <ShoppingBag className="w-3.5 h-3.5 text-neutral-700 flex-shrink-0" />
-              <span className="truncate">Add to Cart</span>
+              {addedAnimation ? (
+                <>
+                  <Check className="w-3.5 h-3.5 animate-bounce" />
+                  <span className="truncate">Added!</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="w-3.5 h-3.5 text-neutral-700 flex-shrink-0" />
+                  <span className="truncate">Add to Cart</span>
+                </>
+              )}
             </button>
 
             <button
               onClick={handleBuyNow}
-              className="w-full bg-[#171717] hover:bg-black text-[#ffffff] hover:text-[#ffdf9c] font-['Inter'] text-[11px] sm:text-xs font-semibold py-2 px-2.5 rounded-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-[0.98] shadow-2xs"
+              className="w-full bg-[#171717] hover:bg-black text-[#ffffff] hover:text-[#ffdf9c] font-['Inter'] text-[11px] sm:text-xs font-semibold py-2 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-2xs hover:shadow-xs"
             >
               <Zap className="w-3.5 h-3.5 text-[#ffdf9c] flex-shrink-0 fill-[#ffdf9c]" />
               <span>Buy Now</span>
