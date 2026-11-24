@@ -337,41 +337,34 @@ export default function Account() {
     <div className="bg-[#F8F8F7] min-h-screen py-6 sm:py-10 text-[#111111]">
       <div className="site-container max-w-[1320px] mx-auto px-3 sm:px-6 lg:px-8">
         
-        {/* TOP PROFILE HEADER CARD */}
-        <div className="bg-[#111111] text-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 mb-6 sm:mb-8 shadow-md border border-neutral-800 relative overflow-hidden">
-          {/* Subtle gold gradient accent */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-[#D4A83F]/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+        {/* TOP PROFILE HEADER CARD - LUXURY RETAIL REFINED */}
+        <div className="bg-[#191919] text-white rounded-2xl border border-[#353535] p-5 sm:p-6 mb-6 sm:mb-8 shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
             {/* Avatar & User Details */}
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#1A1A1A] border-2 border-[#D4A83F] flex items-center justify-center font-['Manrope'] font-bold text-xl sm:text-2xl text-[#F5D98A] shadow-inner">
-                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                </div>
-                <div className="absolute -bottom-1 -right-1 bg-[#D4A83F] text-black p-1 rounded-full shadow-xs">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                </div>
+            <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+              {/* Refined Avatar with restrained gold border */}
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#222222] border border-[#D4AF55]/60 flex items-center justify-center font-['Manrope'] font-bold text-lg sm:text-xl text-[#D4AF55] flex-shrink-0 select-none">
+                {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </div>
 
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="font-['Manrope'] font-bold text-lg sm:text-2xl text-white tracking-tight">
+                  <h1 className="font-['Manrope'] font-bold text-base sm:text-lg text-white tracking-tight truncate">
                     {user.name || 'Valued Customer'}
                   </h1>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-[#D4A83F]/20 text-[#F5D98A] border border-[#D4A83F]/40">
-                    <CheckCircle2 className="w-3 h-3" />
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-md bg-[#30291A] text-[#D4AF55] border border-[#D4AF55]/30">
+                    <CheckCircle2 className="w-3 h-3 text-[#D4AF55]" />
                     Verified Customer
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-xs sm:text-sm text-neutral-300 mt-1 flex-wrap">
-                  <span className="flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-[#D4A83F]" />
+                <div className="flex items-center gap-3 text-xs text-[#B8B8B8] mt-1 flex-wrap">
+                  <span className="flex items-center gap-1.5 truncate">
+                    <Mail className="w-3.5 h-3.5 text-[#B8B8B8]" />
                     {user.email}
                   </span>
                   {user.phone && (
                     <span className="flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-[#D4A83F]" />
+                      <Phone className="w-3.5 h-3.5 text-[#B8B8B8]" />
                       +91 {user.phone.replace(/^91/, '')}
                     </span>
                   )}
@@ -379,23 +372,23 @@ export default function Account() {
               </div>
             </div>
 
-            {/* Quick Actions Header */}
-            <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Action Buttons: Restrained, subtle border, hover gold/red */}
+            <div className="flex items-center gap-2.5 flex-wrap self-start md:self-center">
               <a
                 href={businessConfig.whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30 border border-emerald-500/40 px-3.5 py-2 rounded-xl transition-all"
-                title="Instant WhatsApp Support"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#B8B8B8] hover:text-[#D4AF55] bg-transparent hover:bg-white/[0.03] border border-[#353535] hover:border-[#D4AF55]/60 px-3.5 py-2 rounded-xl transition-all cursor-pointer"
+                title="Contact Customer Support"
               >
-                <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                <MessageCircle className="w-3.5 h-3.5" />
                 <span>Need Help?</span>
               </a>
 
               {user.role === 'admin' && (
                 <Link
                   to="/admin/dashboard"
-                  className="bg-[#D4A83F] hover:bg-[#c29631] text-black font-bold text-xs px-4 py-2 rounded-xl shadow-xs transition-colors"
+                  className="inline-flex items-center text-xs font-semibold text-[#D4AF55] bg-[#30291A] hover:bg-[#3d3320] border border-[#D4AF55]/40 px-3.5 py-2 rounded-xl transition-colors"
                 >
                   Admin Panel
                 </Link>
@@ -406,7 +399,8 @@ export default function Account() {
                   logout();
                   navigate('/');
                 }}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-300 hover:text-white bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#B8B8B8] hover:text-rose-400 bg-transparent hover:bg-rose-500/5 border border-[#353535] hover:border-rose-500/40 px-3.5 py-2 rounded-xl transition-all cursor-pointer"
+                title="Sign out of account"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Sign Out</span>
