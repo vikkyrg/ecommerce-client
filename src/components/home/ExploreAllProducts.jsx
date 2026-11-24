@@ -55,37 +55,37 @@ export default function ExploreAllProducts({ products = [], categories = [] }) {
     }
 
     return result;
-  }, [products, selectedCategory, searchQuery, sortBy]);
+  }, [safeProducts, selectedCategory, searchQuery, sortBy]);
 
   return (
-    <section id="all-products-section" className="py-12 sm:py-16 bg-[#f9f9f7]">
+    <section id="all-products-section" className="py-8 sm:py-16 bg-[#f9f9f7]">
       <div className="site-container">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-5 border-b border-neutral-200/80 gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 sm:mb-8 pb-4 sm:pb-5 border-b border-neutral-200/80 gap-3 sm:gap-4">
           <div>
-            <span className="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider text-amber-700 block mb-1">
+            <span className="font-['Inter'] text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-amber-700 block mb-1">
               Complete Store Inventory
             </span>
-            <h2 className="font-['Manrope'] font-bold text-2xl sm:text-3xl lg:text-4xl text-black tracking-tight">
+            <h2 className="font-['Manrope'] font-bold text-xl sm:text-3xl lg:text-4xl text-black tracking-tight">
               Explore All Products
             </h2>
-            <p className="font-['Inter'] text-xs sm:text-sm text-neutral-600 mt-1.5 max-w-xl leading-relaxed">
+            <p className="font-['Inter'] text-xs sm:text-sm text-neutral-600 mt-1 max-w-xl leading-relaxed">
               Everything you need for stone care, polishing, installation and surface protection.
             </p>
           </div>
 
-          {/* Search & Sort Controls */}
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Search & Sort Controls: Responsive flex-row */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
             {/* Search Input */}
             <div className="relative flex-1 sm:w-64">
-              <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-white border border-neutral-300 rounded-lg text-xs font-['Inter'] text-neutral-800 placeholder-neutral-400 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
+                className="w-full pl-9 pr-3 py-2 bg-white border border-neutral-300 rounded-xl text-xs font-['Inter'] text-neutral-800 placeholder-neutral-400 focus:outline-none focus:border-black transition-all"
               />
             </div>
 
@@ -94,7 +94,7 @@ export default function ExploreAllProducts({ products = [], categories = [] }) {
               <select
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-2 bg-white border border-neutral-300 rounded-lg text-xs font-['Inter'] font-medium text-neutral-800 focus:outline-none focus:border-black cursor-pointer"
+                className="w-full sm:w-auto appearance-none pl-3 pr-8 py-2 bg-white border border-neutral-300 rounded-xl text-xs font-['Inter'] font-semibold text-neutral-800 focus:outline-none focus:border-black cursor-pointer"
               >
                 <option value="featured">Sort: Featured</option>
                 <option value="price-low">Price: Low to High</option>
@@ -107,15 +107,15 @@ export default function ExploreAllProducts({ products = [], categories = [] }) {
           </div>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 scrollbar-none">
+        {/* Category Tabs: Smooth Horizontal Scrollbar */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-5 scrollbar-none select-none">
           {tabCategories.map(cat => {
             const isActive = selectedCategory === cat;
             return (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full font-['Inter'] text-xs font-medium transition-all cursor-pointer ${
+                className={`flex-shrink-0 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full font-['Inter'] text-[11px] sm:text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   isActive
                     ? 'bg-black text-[#ffdf9c] shadow-xs'
                     : 'bg-white text-neutral-700 hover:text-black hover:bg-neutral-100 border border-neutral-200'
@@ -128,7 +128,7 @@ export default function ExploreAllProducts({ products = [], categories = [] }) {
         </div>
 
         {/* Results Count Summary */}
-        <div className="flex items-center justify-between text-xs text-neutral-500 font-['Inter'] mb-5">
+        <div className="flex items-center justify-between text-xs text-neutral-500 font-['Inter'] mb-4 sm:mb-5">
           <span>
             Showing <strong className="text-black font-semibold">{filteredProducts.length}</strong> items
             {selectedCategory !== 'All' && <span> in <strong className="text-black font-semibold">{selectedCategory}</strong></span>}
@@ -139,22 +139,22 @@ export default function ExploreAllProducts({ products = [], categories = [] }) {
                 setSelectedCategory('All');
                 setSearchQuery('');
               }}
-              className="text-amber-700 hover:underline font-medium cursor-pointer"
+              className="text-amber-700 hover:underline font-semibold cursor-pointer"
             >
               Reset filters
             </button>
           )}
         </div>
 
-        {/* 4-Column Responsive Grid */}
+        {/* Responsive Product Grid: 2 cols on mobile, 3 on tablet, 4 on desktop */}
         {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
             {filteredProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id || product._id || product.sku} product={product} />
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center my-6">
+          <div className="bg-white rounded-2xl border border-neutral-200 p-8 sm:p-12 text-center my-4">
             <p className="font-['Manrope'] font-bold text-base text-neutral-800">No products found</p>
             <p className="font-['Inter'] text-xs text-neutral-500 mt-1">
               Try adjusting your search query or switching to another category.
@@ -164,7 +164,7 @@ export default function ExploreAllProducts({ products = [], categories = [] }) {
                 setSelectedCategory('All');
                 setSearchQuery('');
               }}
-              className="mt-4 px-4 py-2 bg-black text-[#ffdf9c] text-xs font-medium rounded-lg hover:bg-neutral-900 transition-colors cursor-pointer"
+              className="mt-4 px-4 py-2 bg-black text-[#ffdf9c] text-xs font-bold rounded-xl hover:bg-neutral-900 transition-colors cursor-pointer"
             >
               Show All Products
             </button>
