@@ -39,23 +39,24 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
       }`}
     >
       <div className="site-container">
-        <div className="flex items-center justify-between h-16 sm:h-18 lg:h-20 gap-2 sm:gap-4 lg:gap-8">
+        {/* Top Navbar Row */}
+        <div className="flex items-center justify-between h-14 sm:h-16 lg:h-20 gap-1.5 sm:gap-3 lg:gap-8">
           
-          {/* Left: Mobile menu button & Brand Logo */}
-          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0 min-w-0">
+          {/* Left: Mobile hamburger menu & Brand */}
+          <div className="flex items-center gap-1 sm:gap-2.5 min-w-0 flex-1 sm:flex-initial">
             <button
               onClick={onOpenMobileMenu}
-              className="lg:hidden p-2 -ml-1 text-neutral-800 hover:text-black hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
+              className="lg:hidden p-1.5 text-neutral-800 hover:text-black hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer flex-shrink-0"
               aria-label="Toggle navigation menu"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
 
-            <Link to="/" className="flex items-center gap-2 group select-none min-w-0">
+            <Link to="/" className="flex items-center gap-1.5 sm:gap-2 group select-none min-w-0">
               <img
                 src="/logo.jpeg"
                 alt={businessConfig.companyName}
-                className="h-8 sm:h-10 lg:h-11 w-auto object-contain rounded-sm transition-transform duration-300 group-hover:scale-103 flex-shrink-0"
+                className="h-7 w-7 sm:h-9 sm:w-9 lg:h-11 lg:w-11 object-contain rounded-sm transition-transform duration-300 group-hover:scale-103 flex-shrink-0"
                 onError={e => {
                   e.target.onerror = null;
                   e.target.style.display = 'none';
@@ -65,22 +66,22 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
               />
               <div
                 style={{ display: 'none' }}
-                className="h-8 w-8 sm:h-10 sm:w-10 bg-black text-[#ffdf9c] rounded-md items-center justify-center font-['Manrope'] font-bold text-base sm:text-xl tracking-tight border border-neutral-800 flex-shrink-0"
+                className="h-7 w-7 sm:h-9 sm:w-9 lg:h-10 lg:w-10 bg-black text-[#ffdf9c] rounded-md items-center justify-center font-['Manrope'] font-bold text-xs sm:text-base tracking-tight border border-neutral-800 flex-shrink-0"
               >
                 NS
               </div>
               <div className="flex flex-col justify-center min-w-0">
-                <span className="font-['Manrope'] font-bold text-sm sm:text-base lg:text-xl tracking-tight text-black leading-tight group-hover:text-amber-900 transition-colors truncate">
+                <span className="font-['Manrope'] font-bold text-xs xs:text-sm sm:text-base lg:text-xl tracking-tight text-black leading-tight group-hover:text-amber-900 transition-colors truncate">
                   {businessConfig.companyName}
                 </span>
-                <span className="font-['Inter'] text-[8px] sm:text-[9px] lg:text-[10px] tracking-wider uppercase text-neutral-500 font-semibold leading-tight truncate">
+                <span className="font-['Inter'] text-[7px] xs:text-[8px] sm:text-[9px] lg:text-[10px] tracking-wider uppercase text-neutral-500 font-semibold leading-tight truncate hidden xs:block">
                   {businessConfig.tagline}
                 </span>
               </div>
             </Link>
           </div>
 
-          {/* Middle: Desktop Search Bar */}
+          {/* Middle: Desktop Search Bar (hidden on mobile/tablet) */}
           <form
             onSubmit={handleSearch}
             className="hidden md:flex flex-1 max-w-lg lg:max-w-xl mx-2 lg:mx-auto relative items-center"
@@ -103,9 +104,9 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
             </div>
           </form>
 
-          {/* Right: Actions (Wishlist, Account, Cart) */}
+          {/* Right: Actions (Account, Wishlist, Cart) */}
           <div className="flex items-center gap-1 sm:gap-2 lg:gap-3 flex-shrink-0">
-            {/* Quick WhatsApp Support on Large Screens */}
+            {/* Quick WhatsApp Support on Ultra-Large Screens */}
             <a
               href={businessConfig.whatsappUrl}
               target="_blank"
@@ -120,11 +121,11 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
             {/* Customer Account Button */}
             <button
               onClick={onOpenAccountModal}
-              className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg hover:bg-neutral-100 cursor-pointer text-neutral-700 transition-colors"
+              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg hover:bg-neutral-100 cursor-pointer text-neutral-700 transition-colors flex items-center gap-1.5"
               title="My Account"
               aria-label="My Account"
             >
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-800 border border-neutral-200">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-800 border border-neutral-200 flex-shrink-0">
                 <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
               <div className="text-left hidden xl:block">
@@ -140,13 +141,13 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
             {/* Wishlist Link */}
             <Link
               to="/wishlist"
-              className="relative p-2 rounded-lg text-neutral-700 hover:text-black hover:bg-neutral-100 transition-colors flex items-center justify-center"
+              className="relative p-1.5 sm:p-2 rounded-lg text-neutral-700 hover:text-black hover:bg-neutral-100 transition-colors flex items-center justify-center flex-shrink-0"
               title="My Wishlist"
               aria-label="Wishlist"
             >
               <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
               {wishlistCount > 0 && (
-                <span className="absolute top-1 right-1 bg-black text-[#ffdf9c] text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center leading-none">
+                <span className="absolute top-0.5 right-0.5 bg-black text-[#ffdf9c] text-[8px] sm:text-[9px] font-bold rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 flex items-center justify-center leading-none">
                   {wishlistCount}
                 </span>
               )}
@@ -155,28 +156,26 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
             {/* Shopping Cart Button */}
             <button
               onClick={() => setIsCartOpen(true)}
-              className="flex items-center gap-1.5 bg-black hover:bg-neutral-800 text-white px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg transition-all shadow-xs group cursor-pointer active:scale-95"
+              className="relative flex items-center justify-center bg-black hover:bg-neutral-800 text-white w-8 h-8 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-lg sm:rounded-xl transition-all shadow-xs group cursor-pointer active:scale-95 flex-shrink-0"
               aria-label="Shopping Cart"
             >
-              <div className="relative flex items-center justify-center">
-                <ShoppingBag className="w-4 h-4 text-[#ffdf9c] group-hover:scale-105 transition-transform" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2 bg-amber-500 text-black text-[9px] font-extrabold rounded-full h-3.5 w-3.5 flex items-center justify-center leading-none">
-                    {cartCount}
-                  </span>
-                )}
-              </div>
-              <span className="text-xs font-bold tracking-wide hidden sm:inline text-neutral-100">
+              <ShoppingBag className="w-4 h-4 text-[#ffdf9c] group-hover:scale-105 transition-transform" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-amber-500 text-black text-[8px] sm:text-[9px] font-extrabold rounded-full h-3.5 w-3.5 flex items-center justify-center leading-none shadow-xs">
+                  {cartCount}
+                </span>
+              )}
+              <span className="text-xs font-bold tracking-wide hidden sm:inline ml-1.5 text-neutral-100">
                 Cart
               </span>
             </button>
           </div>
         </div>
 
-        {/* Mobile Search Bar below header */}
-        <div className="md:hidden pb-2.5">
+        {/* Mobile Search Bar below header: Fluid full-width */}
+        <div className="md:hidden pb-2.5 pt-1">
           <form onSubmit={handleSearch} className="relative flex items-center w-full">
-            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchTerm}
@@ -186,7 +185,7 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
             />
             <button
               type="submit"
-              className="absolute right-1 top-1/2 -translate-y-1/2 bg-black text-white text-[11px] font-semibold px-2.5 py-1 rounded-md"
+              className="absolute right-1 top-1/2 -translate-y-1/2 bg-black text-white text-[11px] font-semibold px-2.5 py-1 rounded-md active:scale-95 cursor-pointer"
             >
               Search
             </button>
