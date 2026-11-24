@@ -38,21 +38,21 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
           : 'border-[#e2e3e1] shadow-[0_1px_3px_rgba(0,0,0,0.03)]'
       }`}
     >
-      <div className="site-container">
+      <div className="w-full max-w-[1320px] mx-auto px-2.5 xs:px-3 sm:px-6 lg:px-8">
         {/* Top Navbar Row */}
-        <div className="flex items-center justify-between h-14 sm:h-16 lg:h-20 gap-1.5 sm:gap-3 lg:gap-8">
+        <div className="flex items-center justify-between h-14 sm:h-16 lg:h-20 gap-1 sm:gap-3 lg:gap-8">
           
           {/* Left: Mobile hamburger menu & Brand */}
-          <div className="flex items-center gap-1 sm:gap-2.5 min-w-0 flex-1 sm:flex-initial">
+          <div className="flex items-center gap-1 sm:gap-2.5 min-w-0 flex-1">
             <button
               onClick={onOpenMobileMenu}
-              className="lg:hidden p-1.5 text-neutral-800 hover:text-black hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer flex-shrink-0"
+              className="lg:hidden p-1 text-neutral-800 hover:text-black hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer flex-shrink-0"
               aria-label="Toggle navigation menu"
             >
               <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
 
-            <Link to="/" className="flex items-center gap-1.5 sm:gap-2 group select-none min-w-0">
+            <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5 group select-none min-w-0">
               <img
                 src="/logo.jpeg"
                 alt={businessConfig.companyName}
@@ -74,7 +74,8 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
                 <span className="font-['Manrope'] font-bold text-xs xs:text-sm sm:text-base lg:text-xl tracking-tight text-black leading-tight group-hover:text-amber-900 transition-colors truncate">
                   {businessConfig.companyName}
                 </span>
-                <span className="font-['Inter'] text-[7px] xs:text-[8px] sm:text-[9px] lg:text-[10px] tracking-wider uppercase text-neutral-500 font-semibold leading-tight truncate hidden xs:block">
+                {/* Always visible tagline, sized responsively */}
+                <span className="font-['Inter'] text-[7px] xs:text-[8px] sm:text-[9px] lg:text-[10px] tracking-wider uppercase text-neutral-500 font-semibold leading-tight truncate block">
                   {businessConfig.tagline}
                 </span>
               </div>
@@ -105,7 +106,7 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
           </form>
 
           {/* Right: Actions (Account, Wishlist, Cart) */}
-          <div className="flex items-center gap-1 sm:gap-2 lg:gap-3 flex-shrink-0">
+          <div className="flex items-center gap-0.5 sm:gap-2 lg:gap-3 flex-shrink-0">
             {/* Quick WhatsApp Support on Ultra-Large Screens */}
             <a
               href={businessConfig.whatsappUrl}
@@ -121,7 +122,7 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
             {/* Customer Account Button */}
             <button
               onClick={onOpenAccountModal}
-              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg hover:bg-neutral-100 cursor-pointer text-neutral-700 transition-colors flex items-center gap-1.5"
+              className="p-1 sm:px-2.5 sm:py-1.5 rounded-lg hover:bg-neutral-100 cursor-pointer text-neutral-700 transition-colors flex items-center gap-1.5 flex-shrink-0"
               title="My Account"
               aria-label="My Account"
             >
@@ -141,25 +142,25 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
             {/* Wishlist Link */}
             <Link
               to="/wishlist"
-              className="relative p-1.5 sm:p-2 rounded-lg text-neutral-700 hover:text-black hover:bg-neutral-100 transition-colors flex items-center justify-center flex-shrink-0"
+              className="relative p-1 sm:p-2 rounded-lg text-neutral-700 hover:text-black hover:bg-neutral-100 transition-colors flex items-center justify-center flex-shrink-0"
               title="My Wishlist"
               aria-label="Wishlist"
             >
               <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
               {wishlistCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 bg-black text-[#ffdf9c] text-[8px] sm:text-[9px] font-bold rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 flex items-center justify-center leading-none">
+                <span className="absolute top-0 right-0 bg-black text-[#ffdf9c] text-[8px] sm:text-[9px] font-bold rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 flex items-center justify-center leading-none">
                   {wishlistCount}
                 </span>
               )}
             </Link>
 
-            {/* Shopping Cart Button */}
+            {/* Shopping Cart Button: Fixed inside viewport */}
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative flex items-center justify-center bg-black hover:bg-neutral-800 text-white w-8 h-8 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-lg sm:rounded-xl transition-all shadow-xs group cursor-pointer active:scale-95 flex-shrink-0"
+              className="relative flex items-center justify-center bg-black hover:bg-neutral-800 text-white w-7 h-7 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-lg sm:rounded-xl transition-all shadow-xs group cursor-pointer active:scale-95 flex-shrink-0 ml-0.5"
               aria-label="Shopping Cart"
             >
-              <ShoppingBag className="w-4 h-4 text-[#ffdf9c] group-hover:scale-105 transition-transform" />
+              <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#ffdf9c] group-hover:scale-105 transition-transform" />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-amber-500 text-black text-[8px] sm:text-[9px] font-extrabold rounded-full h-3.5 w-3.5 flex items-center justify-center leading-none shadow-xs">
                   {cartCount}
