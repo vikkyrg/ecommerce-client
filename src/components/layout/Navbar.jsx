@@ -1,28 +1,44 @@
-import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
-import { Truck, MessageCircle, Phone } from 'lucide-react';
-import businessConfig from '../../config/businessConfig';
+import React, { useState, useEffect } from 'react';
+import { NavLink } from 'react-router-dom';
+import { Truck } from 'lucide-react';
+import { fetchCategories } from '../../services/api';
 
 export default function Navbar() {
-  const navItems = [
-    { label: 'All Products', path: '/products' },
-    { label: 'Marble & Granite Polishing', path: '/products?category=Marble+%26+Granite+Polishing' },
-    { label: 'Tile Adhesives & Grouts', path: '/products?category=Tile+Adhesives+%26+Grouts' },
-    { label: 'Cutting Accessories', path: '/products?category=Cutting+Accessories' },
-    { label: 'Machines & Tools', path: '/products?category=Machines+%26+Tools' },
-    { label: 'Floor Protection', path: '/products?category=Floor+Protection' },
-    { label: 'Contact Us', path: '/contact' }
-  ];
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    fetchCategories()
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        }
+      })
+      .catch(err => console.warn('Navbar categories load note:', err));
+  }, []);
 
   return (
     <nav className="hidden lg:block bg-[#f4f4f2] border-b border-[#e2e3e1] text-neutral-700 text-[13px] font-medium font-['Inter']">
       <div className="site-container">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-1">
-            {navItems.map((item, idx) => (
+          <div className="flex items-center space-x-1 overflow-x-auto scrollbar-none py-0.5">
+            <NavLink
+              to="/products"
+              end
+              className={({ isActive }) =>
+                `px-3 py-2.5 transition-colors border-b-2 flex items-center whitespace-nowrap ${
+                  isActive
+                    ? 'border-black text-black font-semibold bg-white/70'
+                    : 'border-transparent text-neutral-600 hover:text-black hover:border-neutral-300'
+                }`
+              }
+            >
+              <span>All Products</span>
+            </NavLink>
+
+            {categories.slice(0, 6).map(cat => (
               <NavLink
-                key={idx}
-                to={item.path}
+                key={cat.slug || cat._id}
+                to={`/products?category=${encodeURIComponent(cat.slug || cat.name)}`}
                 className={({ isActive }) =>
                   `px-3 py-2.5 transition-colors border-b-2 flex items-center whitespace-nowrap ${
                     isActive
@@ -31,12 +47,25 @@ export default function Navbar() {
                   }`
                 }
               >
-                <span>{item.label}</span>
+                <span>{cat.name}</span>
               </NavLink>
             ))}
+
+            <NavLink
+              to="/contact"
+              className={({ isActive }) =>
+                `px-3 py-2.5 transition-colors border-b-2 flex items-center whitespace-nowrap ${
+                  isActive
+                    ? 'border-black text-black font-semibold bg-white/70'
+                    : 'border-transparent text-neutral-600 hover:text-black hover:border-neutral-300'
+                }`
+              }
+            >
+              <span>Contact Us</span>
+            </NavLink>
           </div>
 
-          <div className="flex items-center gap-3 text-xs font-medium text-neutral-600 flex-shrink-0">
+          <div className="flex items-center gap-3 text-xs font-medium text-neutral-600 flex-shrink-0 ml-4">
             <span className="flex items-center gap-1.5 text-neutral-800 bg-neutral-200/70 px-2.5 py-1 rounded border border-neutral-300">
               <Truck className="w-3.5 h-3.5 text-neutral-700" />
               <span>Doorstep Delivery Across India</span>

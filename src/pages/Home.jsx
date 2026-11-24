@@ -274,50 +274,15 @@ export default function Home() {
             </div>
           </ScrollReveal>
 
-          {/* 5 Main Categories Grid: 2 cols on mobile, 3 on tablet, 5 on desktop */}
+          {/* Dynamic 6 Master Categories Grid: 2 cols on mobile, 3 on tablet, 3 to 6 on desktop */}
           <StaggerContainer
             staggerDelay={80}
-            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-5"
+            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-3.5 sm:gap-5"
           >
-            {mainCategories.map(cat => (
-              <CategoryCard key={cat.id} category={cat} />
+            {categories.map(cat => (
+              <CategoryCard key={cat.id || cat.slug} category={cat} />
             ))}
           </StaggerContainer>
-
-          {/* Additional Essentials Subsection Card */}
-          {additionalEssentials && (
-            <ScrollReveal direction="up" delay={200} duration={600} distance={20}>
-              <div className="mt-4 sm:mt-5 p-4 sm:p-5 bg-white rounded-2xl border border-[#e2e3e1] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 shadow-2xs hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden flex-shrink-0 bg-neutral-100 border border-neutral-200">
-                    <img
-                      src={additionalEssentials.image}
-                      alt={additionalEssentials.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="inline-block px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold tracking-wide uppercase bg-neutral-100 text-neutral-700 mb-0.5">
-                      Jobsite Supplies
-                    </div>
-                    <h4 className="font-['Manrope'] font-bold text-xs sm:text-base text-black truncate">
-                      {additionalEssentials.name}
-                    </h4>
-                    <p className="font-['Inter'] text-[11px] sm:text-xs text-neutral-500 line-clamp-1">
-                      {additionalEssentials.description}
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  to={`/products?category=${encodeURIComponent(additionalEssentials.name)}`}
-                  className="flex-shrink-0 inline-flex items-center justify-center gap-2 bg-neutral-900 hover:bg-black text-white px-4 py-2.5 rounded-xl text-xs font-semibold font-['Inter'] transition-colors shadow-2xs"
-                >
-                  <span>Browse Essentials</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </ScrollReveal>
-          )}
         </div>
       </section>
 

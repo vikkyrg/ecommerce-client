@@ -13,7 +13,7 @@ import {
   Search,
   ArrowUpDown
 } from 'lucide-react';
-import { fetchProducts } from '../services/api';
+import { fetchProducts, fetchCategories } from '../services/api';
 import ProductCard from '../components/products/ProductCard';
 import StaggerContainer from '../components/common/StaggerContainer';
 import ScrollReveal from '../components/common/ScrollReveal';
@@ -21,6 +21,7 @@ import ScrollReveal from '../components/common/ScrollReveal';
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
+  const [categoriesList, setCategoriesList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
@@ -31,26 +32,23 @@ export default function Products() {
   const sortParam = searchParams.get('sort') || 'featured';
   const inStockParam = searchParams.get('inStock') === 'true';
 
+  // Load Categories dynamically from API
+  useEffect(() => {
+    fetchCategories()
+      .then(data => {
+        if (Array.isArray(data)) setCategoriesList(data);
+      })
+      .catch(e => console.warn('Categories load note:', e));
+  }, []);
+
   const categories = [
     'All Categories',
-    'Marble & Granite Polishing',
-    'Tile Adhesives & Grouts',
-    'Cutting Accessories',
-    'Machines & Tools',
-    'Floor Protection'
+    ...categoriesList.map(c => c.name)
   ];
 
-  const brands = [
-    'All Brands',
-    'Tenax',
-    'Akemi',
-    'Kerakoll',
-    'Mapei',
-    'Surie',
-    'Makita',
-    'Dongcheng',
-    'Accurate'
-  ];
+  // Extract unique brands dynamically from products
+  const dynamicBrands = Array.from(new Set(products.map(p => p.brand).filter(Boolean))).sort();
+  const brands = ['All Brands', ...dynamicBrands];
 
   // Load products based on query params
   useEffect(() => {

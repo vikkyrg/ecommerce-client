@@ -25,6 +25,8 @@ export default function ProductCard({ product }) {
     setIsCartOpen(true);
   };
 
+  const productId = product.id || product._id || product.slug;
+
   return (
     <div className="group relative bg-[#ffffff] rounded-xl border border-[#e2e3e1] shadow-2xs hover:shadow-lg hover:border-neutral-400 transition-all duration-350 ease-out flex flex-col h-full overflow-hidden transform hover:-translate-y-1">
       
@@ -62,16 +64,16 @@ export default function ProductCard({ product }) {
 
       {/* Product Image Link to PDP */}
       <Link
-        to={`/product/${product.id}`}
+        to={`/product/${productId}`}
         className="relative w-full aspect-square p-3 sm:p-5 flex items-center justify-center bg-white overflow-hidden border-b border-neutral-100 cursor-pointer"
       >
         <img
-          src={product.image}
+          src={product.image || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'}
           alt={product.name}
           className="w-full h-full max-h-[140px] xs:max-h-[160px] sm:max-h-[200px] object-contain transition-transform duration-500 ease-out group-hover:scale-106"
           loading="lazy"
           onError={e => {
-            e.target.style.opacity = '0.7';
+            e.target.src = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
           }}
         />
       </Link>
@@ -83,13 +85,13 @@ export default function ProductCard({ product }) {
           <div className="flex items-center gap-1 font-['Inter'] text-[9px] sm:text-[11px] font-medium text-neutral-500 flex-wrap">
             <span className="text-black font-semibold uppercase tracking-wider">{product.brand}</span>
             <span>•</span>
-            <span className={product.inStock ? 'text-emerald-700 font-semibold' : 'text-neutral-500'}>
-              {product.inStock ? 'In Stock' : 'Out of Stock'}
+            <span className={product.inStock !== false ? 'text-emerald-700 font-semibold' : 'text-neutral-500'}>
+              {product.inStock !== false ? 'In Stock' : 'Out of Stock'}
             </span>
           </div>
 
           {/* Product Title with PDP Link */}
-          <Link to={`/product/${product.id}`}>
+          <Link to={`/product/${productId}`}>
             <h3 className="font-['Manrope'] font-semibold text-[12px] sm:text-[14px] text-neutral-900 leading-snug line-clamp-2 min-h-[34px] sm:min-h-[38px] group-hover:text-black transition-colors">
               {product.name}
             </h3>
@@ -111,9 +113,15 @@ export default function ProductCard({ product }) {
         {/* Pricing & Customer Purchase Actions */}
         <div className="pt-2 sm:pt-3 mt-2 sm:mt-3 border-t border-neutral-100 flex flex-col justify-end">
           <div className="flex items-baseline gap-1.5 flex-wrap">
-            <span className="font-['Manrope'] text-sm sm:text-lg font-bold text-black tracking-tight">
-              ₹{product.price.toLocaleString('en-IN')}
-            </span>
+            {product.price > 0 ? (
+              <span className="font-['Manrope'] text-sm sm:text-lg font-bold text-black tracking-tight">
+                ₹{product.price.toLocaleString('en-IN')}
+              </span>
+            ) : (
+              <span className="font-['Manrope'] text-xs sm:text-sm font-bold text-amber-800 tracking-tight">
+                Price On Request
+              </span>
+            )}
             {product.mrp && product.mrp > product.price && (
               <span className="text-[10px] sm:text-xs text-neutral-400 line-through">
                 ₹{product.mrp.toLocaleString('en-IN')}

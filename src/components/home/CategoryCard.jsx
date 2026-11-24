@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
 export default function CategoryCard({ category }) {
-  const { name, description, image, itemCount } = category;
+  const { name, slug, description, image, itemCount } = category;
+  const targetCategory = slug || name;
 
   return (
     <Link
-      to={`/products?category=${encodeURIComponent(name)}`}
+      to={`/products?category=${encodeURIComponent(targetCategory)}`}
       className="group flex flex-col bg-white rounded-xl p-3 sm:p-5 border border-[#e2e3e1] shadow-2xs hover:shadow-lg hover:border-neutral-400 transition-all duration-350 ease-out transform hover:-translate-y-1 h-full min-w-0"
     >
       {/* Category Image with Smooth Zoom */}
