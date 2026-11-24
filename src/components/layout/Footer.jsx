@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, Globe, ShieldCheck, Truck, Headphones, MessageCircle, RotateCcw, MapPin } from 'lucide-react';
 import businessConfig from '../../config/businessConfig';
+import logoImg from '../../assets/logo.png';
 
 export default function Footer() {
   return (
@@ -74,12 +75,9 @@ export default function Footer() {
           <div className="lg:col-span-4 flex flex-col gap-3.5">
             <div className="flex items-center gap-2.5">
               <img
-                src="/logo.jpeg"
+                src={logoImg}
                 alt={businessConfig.companyName}
-                className="h-8 w-auto object-contain rounded-sm"
-                onError={e => {
-                  e.target.style.display = 'none';
-                }}
+                className="h-9 w-9 object-contain rounded-md"
               />
               <span className="font-['Manrope'] font-bold text-base sm:text-lg text-white uppercase tracking-tight">
                 {businessConfig.companyName}
@@ -133,27 +131,27 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/products?category=Marble+%26+Granite+Polishing" className="hover:text-[#ffdf9c] transition-colors">
+                <Link to="/products?category=Marble+and+Granite+Polishing+Materials" className="hover:text-[#ffdf9c] transition-colors">
                   Marble &amp; Granite Polishing
                 </Link>
               </li>
               <li>
-                <Link to="/products?category=Tile+Adhesives+%26+Grouts" className="hover:text-[#ffdf9c] transition-colors">
+                <Link to="/products?category=Tile+Adhesives+and+Epoxy+Grouts" className="hover:text-[#ffdf9c] transition-colors">
                   Tile Adhesives &amp; Epoxy Grouts
                 </Link>
               </li>
               <li>
-                <Link to="/products?category=Cutting+Accessories" className="hover:text-[#ffdf9c] transition-colors">
+                <Link to="/products?category=Marble+and+Granite+Cutting+Accessories" className="hover:text-[#ffdf9c] transition-colors">
                   Diamond Cutting Accessories
                 </Link>
               </li>
               <li>
-                <Link to="/products?category=Machines+%26+Tools" className="hover:text-[#ffdf9c] transition-colors">
+                <Link to="/products?category=Machines" className="hover:text-[#ffdf9c] transition-colors">
                   Machines &amp; Tools
                 </Link>
               </li>
               <li>
-                <Link to="/products?category=Floor+Protection" className="hover:text-[#ffdf9c] transition-colors">
+                <Link to="/products?category=Floor+Covering+Materials" className="hover:text-[#ffdf9c] transition-colors">
                   Floor Protection Materials
                 </Link>
               </li>

@@ -3,6 +3,7 @@ import { Search, SlidersHorizontal } from 'lucide-react';
 import ProductCard from '../products/ProductCard';
 
 export default function ExploreAllProducts({ products = [], categories = [] }) {
+  // selectedCategory stores the selected category slug or 'All'
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('featured');
@@ -14,11 +15,47 @@ export default function ExploreAllProducts({ products = [], categories = [] }) {
     return [];
   }, [products]);
 
-  // Categories list for tabs
+  // Categories list for tabs with both slug and display name
   const tabCategories = useMemo(() => {
     const catsList = Array.isArray(categories) ? categories : [];
-    return ['All', ...catsList.map(c => c.name).filter(Boolean)];
+    return [
+      { name: 'All Products', slug: 'All' },
+      ...catsList.map(c => ({
+        name: c.name,
+        slug: c.slug || c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        id: c._id || c.id
+      }))
+    ];
   }, [categories]);
+
+  // Find active category object for display
+  const activeCategoryObj = useMemo(() => {
+    return tabCategories.find(c => c.slug === selectedCategory) || { name: 'All Products', slug: 'All' };
+  }, [tabCategories, selectedCategory]);
+
+  // Helper to check if a product matches a category
+  const matchesCategory = (product, catSlug) => {
+    if (catSlug === 'All') return true;
+
+    const targetCat = tabCategories.find(c => c.slug === catSlug);
+    const targetSlug = catSlug.toLowerCase();
+    const targetName = targetCat ? targetCat.name.toLowerCase() : '';
+    const targetId = targetCat && targetCat.id ? targetCat.id.toString() : '';
+
+    const pCat = (product.category || '').toLowerCase();
+    const pCatName = (product.categoryName || '').toLowerCase();
+    const pCatRef = product.categoryRef ? (product.categoryRef._id || product.categoryRef).toString() : '';
+
+    return (
+      pCat === targetSlug ||
+      pCat === targetName ||
+      pCatName === targetName ||
+      pCatName === targetSlug ||
+      (targetId && pCatRef === targetId) ||
+      pCat.replace(/-/g, ' ') === targetName ||
+      targetSlug.replace(/-/g, ' ') === pCat
+    );
+  };
 
   // Filtered and sorted products
   const filteredProducts = useMemo(() => {
@@ -26,36 +63,34 @@ export default function ExploreAllProducts({ products = [], categories = [] }) {
 
     // Category filter
     if (selectedCategory !== 'All') {
-      result = result.filter(
-        p => p.category?.toLowerCase() === selectedCategory.toLowerCase() ||
-             p.category?.toLowerCase().includes(selectedCategory.toLowerCase())
-      );
+      result = result.filter(p => matchesCategory(p, selectedCategory));
     }
 
     // Search query filter
     if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase();
+      const q = searchQuery.toLowerCase().trim();
       result = result.filter(
-        p => p.name?.toLowerCase().includes(q) ||
-             p.brand?.toLowerCase().includes(q) ||
-             p.category?.toLowerCase().includes(q) ||
-             p.sku?.toLowerCase().includes(q)
+        p => (p.name && p.name.toLowerCase().includes(q)) ||
+             (p.brand && p.brand.toLowerCase().includes(q)) ||
+             (p.category && p.category.toLowerCase().includes(q)) ||
+             (p.categoryName && p.categoryName.toLowerCase().includes(q)) ||
+             (p.sku && p.sku.toLowerCase().includes(q))
       );
     }
 
     // Sort order
     if (sortBy === 'price-low') {
-      result.sort((a, b) => a.price - b.price);
+      result.sort((a, b) => (a.price || 0) - (b.price || 0));
     } else if (sortBy === 'price-high') {
-      result.sort((a, b) => b.price - a.price);
+      result.sort((a, b) => (b.price || 0) - (a.price || 0));
     } else if (sortBy === 'rating') {
       result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (sortBy === 'name') {
-      result.sort((a, b) => a.name.localeCompare(b.name));
+      result.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
 
     return result;
-  }, [safeProducts, selectedCategory, searchQuery, sortBy]);
+  }, [safeProducts, selectedCategory, searchQuery, sortBy, tabCategories]);
 
   return (
     <section id="all-products-section" className="py-8 sm:py-16 bg-[#f9f9f7]">
@@ -110,18 +145,18 @@ export default function ExploreAllProducts({ products = [], categories = [] }) {
         {/* Category Tabs: Smooth Horizontal Scrollbar */}
         <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-5 scrollbar-none select-none">
           {tabCategories.map(cat => {
-            const isActive = selectedCategory === cat;
+            const isActive = selectedCategory === cat.slug;
             return (
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                key={cat.slug}
+                onClick={() => setSelectedCategory(cat.slug)}
                 className={`flex-shrink-0 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full font-['Inter'] text-[11px] sm:text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   isActive
                     ? 'bg-black text-[#ffdf9c] shadow-xs'
                     : 'bg-white text-neutral-700 hover:text-black hover:bg-neutral-100 border border-neutral-200'
                 }`}
               >
-                {cat === 'All' ? 'All Products' : cat}
+                {cat.name}
               </button>
             );
           })}
@@ -131,7 +166,7 @@ export default function ExploreAllProducts({ products = [], categories = [] }) {
         <div className="flex items-center justify-between text-xs text-neutral-500 font-['Inter'] mb-4 sm:mb-5">
           <span>
             Showing <strong className="text-black font-semibold">{filteredProducts.length}</strong> items
-            {selectedCategory !== 'All' && <span> in <strong className="text-black font-semibold">{selectedCategory}</strong></span>}
+            {selectedCategory !== 'All' && <span> in <strong className="text-black font-semibold">{activeCategoryObj.name}</strong></span>}
           </span>
           {(searchQuery || selectedCategory !== 'All') && (
             <button

@@ -22,22 +22,25 @@ export default function AdminDashboard() {
 
   const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   // New product form modal state
   const [showAddModal, setShowAddModal] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: '',
-    brand: 'Tenax',
+    brand: '',
     sku: '',
-    category: 'Marble & Granite Polishing',
+    category: '',
     price: '',
     mrp: '',
-    stock: 25,
-    size: '1 Liter',
+    stock: '',
+    size: '',
     description: '',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCSXCIJPEceZGNuZyqKbhC8_BQArcQi3WMXEc0P1DzHrfhrQ3TAanwLtSHf3WCpP5t5jzjixohSK2FmRJXb0xDrW1BJr5WPP7Rce_dYV-5Q8wfaBDnS8Gq0HO83ki9DIQB9bzdanqfEYyU4zAgyMTbGdGs-wJu61xNxNbQPEvIN0wqzXv2_eVGH1lslY0QvOmjIkfsX0weN7Qp_4kELbQkg0tyCMS_Xi-Wx8DneX7w'
+    image: ''
   });
   const [formMsg, setFormMsg] = useState('');
 
@@ -50,14 +53,28 @@ export default function AdminDashboard() {
     }
 
     Promise.all([
-      fetch('/api/products?limit=100').then(r => r.json()),
-      fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
+      fetch('/api/products?activeOnly=false&limit=300'),
+      fetch('/api/categories?all=true', { headers: { Authorization: `Bearer ${token}` } }),
+      fetch('/api/brands?activeOnly=false', { headers: { Authorization: `Bearer ${token}` } }),
+      fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } })
     ])
-      .then(([prodsData, ordersData]) => {
+      .then(async ([productsResponse, categoriesResponse, brandsResponse, ordersResponse]) => {
+        const [prodsData, categoryData, brandData, ordersData] = await Promise.all([
+          productsResponse.json(),
+          categoriesResponse.json(),
+          brandsResponse.json(),
+          ordersResponse.json()
+        ]);
+        if (!productsResponse.ok || !categoriesResponse.ok || !brandsResponse.ok || !ordersResponse.ok) {
+          throw new Error(prodsData.message || categoryData.message || brandData.message || ordersData.message || 'Failed to load admin data');
+        }
         setProducts(Array.isArray(prodsData?.products) ? prodsData.products : []);
+        setCategories(Array.isArray(categoryData) ? categoryData : []);
+        setBrands(Array.isArray(brandData) ? brandData : []);
+        setNewProduct(current => ({ ...current, category: current.category || categoryData[0]?.slug || '' }));
         setOrders(Array.isArray(ordersData) ? ordersData : []);
       })
-      .catch(() => {})
+      .catch(error => setLoadError(error.message || 'Failed to load admin data'))
       .finally(() => setLoading(false));
   }, [isAdmin, navigate, token]);
 
@@ -72,7 +89,13 @@ export default function AdminDashboard() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(newProduct)
+        body: JSON.stringify({
+          ...newProduct,
+          image: '',
+          price: newProduct.price === '' ? null : Number(newProduct.price),
+          mrp: newProduct.mrp === '' ? null : Number(newProduct.mrp),
+          stock: newProduct.stock === '' ? null : Number(newProduct.stock)
+        })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to create product');
@@ -81,13 +104,13 @@ export default function AdminDashboard() {
       setShowAddModal(false);
       setNewProduct({
         name: '',
-        brand: 'Tenax',
+        brand: '',
         sku: '',
-        category: 'Marble & Granite Polishing',
+        category: categories[0]?.slug || '',
         price: '',
         mrp: '',
-        stock: 25,
-        size: '1 Liter',
+        stock: '',
+        size: '',
         description: '',
         image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCSXCIJPEceZGNuZyqKbhC8_BQArcQi3WMXEc0P1DzHrfhrQ3TAanwLtSHf3WCpP5t5jzjixohSK2FmRJXb0xDrW1BJr5WPP7Rce_dYV-5Q8wfaBDnS8Gq0HO83ki9DIQB9bzdanqfEYyU4zAgyMTbGdGs-wJu61xNxNbQPEvIN0wqzXv2_eVGH1lslY0QvOmjIkfsX0weN7Qp_4kELbQkg0tyCMS_Xi-Wx8DneX7w'
       });
@@ -103,10 +126,12 @@ export default function AdminDashboard() {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (res.ok) {
-        setProducts(prev => prev.filter(p => p.id !== id && p.sku !== id));
-      }
-    } catch (e) {}
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to delete product');
+      setProducts(prev => prev.filter(p => (p._id || p.id) !== id));
+    } catch (error) {
+      setLoadError(error.message || 'Failed to delete product');
+    }
   };
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
@@ -158,6 +183,8 @@ export default function AdminDashboard() {
             </button>
           </div>
         </div>
+
+        {loadError && <p role="alert" className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{loadError}</p>}
 
         {/* Top Metric Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -215,25 +242,31 @@ export default function AdminDashboard() {
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {products.map(p => (
-                  <tr key={p.id || p.sku} className="hover:bg-neutral-50/80 transition-colors">
+                  <tr key={p._id || p.id || p.slug || p.sku} className="hover:bg-neutral-50/80 transition-colors">
                     <td className="p-4 flex items-center gap-3">
-                      <img src={p.image} alt={p.name} className="w-10 h-10 object-contain rounded border border-neutral-200 p-1 bg-white" />
+                      {p.image ? (
+                        <img src={p.image} alt="" className="w-10 h-10 object-contain rounded border border-neutral-200 p-1 bg-white" />
+                      ) : (
+                        <div className="w-10 h-10 flex items-center justify-center rounded border border-neutral-200 bg-neutral-50 text-neutral-400">
+                          <Package className="w-5 h-5" />
+                        </div>
+                      )}
                       <div>
                         <span className="font-semibold text-black line-clamp-1 max-w-xs">{p.name}</span>
-                        <span className="text-[10px] text-neutral-500 uppercase font-bold">{p.brand}</span>
+                        <span className="text-[10px] text-neutral-500 uppercase font-bold">{p.brandName || p.brand || 'No brand'}</span>
                       </div>
                     </td>
-                    <td className="p-4 font-mono font-semibold text-neutral-700">{p.sku}</td>
-                    <td className="p-4 text-neutral-600 line-clamp-1 max-w-[160px]">{p.category}</td>
-                    <td className="p-4 font-bold text-black">₹{p.price?.toLocaleString('en-IN')}</td>
+                    <td className="p-4 font-mono font-semibold text-neutral-700">{p.sku || '—'}</td>
+                    <td className="p-4 text-neutral-600 line-clamp-1 max-w-[160px]">{p.categoryName || p.category || '—'}</td>
+                    <td className="p-4 font-bold text-black">{p.price == null ? '—' : `₹${p.price.toLocaleString('en-IN')}`}</td>
                     <td className="p-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${p.inStock !== false ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`}>
-                        {p.stock || 25} in stock
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${p.isActive === false ? 'bg-rose-50 text-rose-800' : 'bg-emerald-50 text-emerald-800'}`}>
+                        {p.isActive === false ? 'Inactive' : 'Active'} · {p.stock == null ? 'Stock unknown' : `${p.stock} in stock`}
                       </span>
                     </td>
                     <td className="p-4 text-right">
                       <button
-                        onClick={() => handleDeleteProduct(p.id || p.sku)}
+                        onClick={() => handleDeleteProduct(p._id || p.id || p.sku)}
                         className="text-rose-600 hover:text-rose-800 p-1 cursor-pointer"
                         title="Delete product"
                       >
@@ -265,6 +298,11 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
+                  {loading ? (
+                    <tr><td className="p-8 text-center text-neutral-500" colSpan="6">Loading products...</td></tr>
+                  ) : products.length === 0 ? (
+                    <tr><td className="p-8 text-center text-neutral-500" colSpan="6">No products found.</td></tr>
+                  ) : null}
                   {orders.map(o => (
                     <tr key={o._id || o.orderNumber} className="hover:bg-neutral-50/80 transition-colors">
                       <td className="p-4 font-mono font-bold text-black">{o.orderNumber}</td>
@@ -324,30 +362,32 @@ export default function AdminDashboard() {
                     required
                     value={newProduct.name}
                     onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
-                    placeholder="e.g. Tenax Pro Gloss Polish 1L"
+                    placeholder="Product name"
                     className="w-full bg-[#f9f9f7] p-2.5 rounded-lg border border-neutral-300"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold mb-1">Brand *</label>
-                    <input
-                      type="text"
-                      required
+                    <label className="block font-semibold mb-1">Brand</label>
+                    <select
                       value={newProduct.brand}
                       onChange={e => setNewProduct({ ...newProduct, brand: e.target.value })}
                       className="w-full bg-[#f9f9f7] p-2.5 rounded-lg border border-neutral-300"
-                    />
+                    >
+                      <option value="">No identifiable brand</option>
+                      {brands
+                        .filter(brand => !newProduct.category || (brand.categories || []).includes(newProduct.category))
+                        .map(brand => <option key={brand._id} value={brand.slug}>{brand.name}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label className="block font-semibold mb-1">SKU *</label>
                     <input
                       type="text"
-                      required
                       value={newProduct.sku}
                       onChange={e => setNewProduct({ ...newProduct, sku: e.target.value.toUpperCase() })}
-                      placeholder="TNX-010"
+                      placeholder="Optional"
                       className="w-full bg-[#f9f9f7] p-2.5 rounded-lg border border-neutral-300 uppercase font-mono"
                     />
                   </div>
@@ -356,38 +396,37 @@ export default function AdminDashboard() {
                 <div>
                   <label className="block font-semibold mb-1">Category *</label>
                   <select
+                    required
                     value={newProduct.category}
                     onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}
                     className="w-full bg-[#f9f9f7] p-2.5 rounded-lg border border-neutral-300"
                   >
-                    <option value="Marble & Granite Polishing">Marble & Granite Polishing</option>
-                    <option value="Tile Adhesives & Epoxy Grouts">Tile Adhesives & Epoxy Grouts</option>
-                    <option value="Marble & Granite Cutting Accessories">Marble & Granite Cutting Accessories</option>
-                    <option value="Machines & Tools">Machines & Tools</option>
-                    <option value="Floor Covering Materials">Floor Covering Materials</option>
-                    <option value="Additional Essentials">Additional Essentials</option>
+                    <option value="">Select a category</option>
+                    {categories.map(category => <option key={category._id} value={category.slug}>{category.name}</option>)}
                   </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold mb-1">Selling Price (₹) *</label>
+                    <label className="block font-semibold mb-1">Selling Price (₹)</label>
                     <input
                       type="number"
-                      required
+                      min="0"
                       value={newProduct.price}
                       onChange={e => setNewProduct({ ...newProduct, price: e.target.value })}
-                      placeholder="1800"
+                      placeholder="Optional"
                       className="w-full bg-[#f9f9f7] p-2.5 rounded-lg border border-neutral-300"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold mb-1">MRP (₹)</label>
+                    <label className="block font-semibold mb-1">Stock Quantity</label>
                     <input
                       type="number"
-                      value={newProduct.mrp}
-                      onChange={e => setNewProduct({ ...newProduct, mrp: e.target.value })}
-                      placeholder="2100"
+                      min="0"
+                      step="1"
+                      value={newProduct.stock}
+                      onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })}
+                      placeholder="Optional"
                       className="w-full bg-[#f9f9f7] p-2.5 rounded-lg border border-neutral-300"
                     />
                   </div>

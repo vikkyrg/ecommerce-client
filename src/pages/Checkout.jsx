@@ -38,6 +38,9 @@ export default function Checkout() {
 
   const shippingPrice = cartTotal > 1999 || cartTotal === 0 ? 0 : 150;
   const totalPrice = Math.max(0, cartTotal + shippingPrice - couponDiscount);
+  const hasUnpricedItems = cart.some(item =>
+    item.price === null || item.price === undefined || !Number.isFinite(Number(item.price))
+  );
 
   if (cart.length === 0) {
     return (
@@ -46,6 +49,20 @@ export default function Checkout() {
         <p className="text-xs text-neutral-500 mt-2 mb-6">Add products before proceeding to checkout.</p>
         <Link to="/products" className="bg-black text-[#ffdf9c] px-6 py-3 rounded-lg text-xs font-semibold">
           Browse Products
+        </Link>
+      </div>
+    );
+  }
+
+  if (hasUnpricedItems) {
+    return (
+      <div className="site-container py-20 text-center">
+        <h2 className="font-['Manrope'] font-bold text-2xl text-black">Price confirmation required</h2>
+        <p className="text-sm text-neutral-500 mt-2 mb-6">
+          Some products do not have a catalog price yet. Remove them or request a quote before checkout.
+        </p>
+        <Link to="/cart" className="bg-black text-[#ffdf9c] px-6 py-3 rounded-lg text-xs font-semibold">
+          Return to Cart
         </Link>
       </div>
     );

@@ -10,7 +10,8 @@ import {
   Truck,
   RotateCcw,
   Tag,
-  Check
+  Check,
+  Package
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
@@ -45,6 +46,7 @@ export default function Cart() {
 
   const finalShipping = cartTotal > 1999 || cartTotal === 0 ? 0 : 150;
   const finalTotal = Math.max(0, cartTotal + finalShipping - couponDiscount);
+  const hasUnpricedItems = cart.some(item => item.price === null || item.price === undefined || !Number.isFinite(Number(item.price)));
 
   if (cart.length === 0) {
     return (
@@ -97,7 +99,11 @@ export default function Cart() {
                       to={`/product/${item.id}`}
                       className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-neutral-50 border border-neutral-200 p-1.5 flex-shrink-0 flex items-center justify-center overflow-hidden"
                     >
-                      <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                      ) : (
+                        <Package className="w-7 h-7 text-neutral-300" aria-label="No product image" />
+                      )}
                     </Link>
                     <div className="min-w-0 flex-1">
                       <span className="text-[10px] uppercase font-bold text-neutral-400 block tracking-wider truncate">
@@ -110,7 +116,9 @@ export default function Cart() {
                         {item.name}
                       </Link>
                       <div className="flex items-center gap-2 mt-1 text-xs text-neutral-500">
-                        <span className="font-bold text-black">₹{item.price.toLocaleString('en-IN')}</span>
+                        <span className="font-bold text-black">
+                          {item.price == null ? 'Price on request' : `₹${Number(item.price).toLocaleString('en-IN')}`}
+                        </span>
                         {item.size && <span>• {item.size}</span>}
                       </div>
                     </div>
@@ -138,7 +146,7 @@ export default function Cart() {
 
                     <div className="text-right flex-shrink-0">
                       <span className="font-['Manrope'] font-bold text-sm sm:text-base text-black block">
-                        ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                        {item.price == null ? 'Quote required' : `₹${(Number(item.price) * item.quantity).toLocaleString('en-IN')}`}
                       </span>
                     </div>
 
@@ -257,9 +265,15 @@ export default function Cart() {
 
             {/* Checkout Action */}
             <div className="pt-2">
+              {hasUnpricedItems && (
+                <p className="mb-3 text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                  Remove items with unconfirmed pricing before checkout, or contact us for a quote.
+                </p>
+              )}
               <button
                 onClick={() => navigate('/checkout')}
-                className="w-full bg-black hover:bg-neutral-900 text-[#ffdf9c] font-bold text-xs sm:text-sm py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-98"
+                disabled={hasUnpricedItems}
+                className="w-full bg-black hover:bg-neutral-900 text-[#ffdf9c] font-bold text-xs sm:text-sm py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span>Proceed to Checkout</span>
                 <ArrowRight className="w-4 h-4" />

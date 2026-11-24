@@ -1,14 +1,29 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingBag, Star, Zap, Check } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Zap, Check, Package } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 
 export default function ProductCard({ product }) {
   const { addToCart, setIsCartOpen } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
-  const isWishlisted = isInWishlist(product.id);
   const [addedAnimation, setAddedAnimation] = useState(false);
+  const productId = product.id || product._id || product.slug;
+  const isWishlisted = isInWishlist(productId);
+  const hasPrice = product.price !== null && product.price !== undefined &&
+    product.price !== '' && Number.isFinite(Number(product.price));
+  const unavailable = product.inStock === false || product.stock === 0;
+  const hasStockConfirmation = product.inStock === true ||
+    (product.stock !== null && product.stock !== undefined && Number.isFinite(Number(product.stock)));
+  const canPurchase = hasPrice && hasStockConfirmation && !unavailable;
+  const availability = unavailable
+    ? 'Out of Stock'
+    : product.inStock === true || Number(product.stock) > 0
+      ? 'In Stock'
+      : 'Availability on request';
+  const inquiryUrl = `https://wa.me/919738893424?text=${encodeURIComponent(
+    `Hi NS Stone Chemicals, please share the price and availability for: ${product.name}`
+  )}`;
 
   const handleAddToCart = e => {
     e.preventDefault();
@@ -24,8 +39,6 @@ export default function ProductCard({ product }) {
     addToCart(product, 1);
     setIsCartOpen(true);
   };
-
-  const productId = product.id || product._id || product.slug;
 
   return (
     <div className="group relative bg-[#ffffff] rounded-xl border border-[#e2e3e1] shadow-2xs hover:shadow-lg hover:border-neutral-400 transition-all duration-350 ease-out flex flex-col h-full overflow-hidden transform hover:-translate-y-1">
@@ -67,15 +80,20 @@ export default function ProductCard({ product }) {
         to={`/product/${productId}`}
         className="relative w-full aspect-square p-3 sm:p-5 flex items-center justify-center bg-white overflow-hidden border-b border-neutral-100 cursor-pointer"
       >
-        <img
-          src={product.image || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'}
-          alt={product.name}
-          className="w-full h-full max-h-[140px] xs:max-h-[160px] sm:max-h-[200px] object-contain transition-transform duration-500 ease-out group-hover:scale-106"
-          loading="lazy"
-          onError={e => {
-            e.target.src = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
-          }}
-        />
+        {product.image ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full max-h-[140px] xs:max-h-[160px] sm:max-h-[200px] object-contain transition-transform duration-500 ease-out group-hover:scale-106"
+            loading="lazy"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.parentElement.innerHTML = '<span class=\"flex items-center justify-center w-full h-full\"><svg class=\"w-12 h-12 text-neutral-300\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"m7.5 4.27 9 5.15\"/><path d=\"M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z\"/><path d=\"m3.3 7 8.7 5 8.7-5\"/><path d=\"M12 22V12\"/></svg></span>';
+            }}
+          />
+        ) : (
+          <Package className="w-12 h-12 text-neutral-300" aria-label="No product image" />
+        )}
       </Link>
 
       {/* Product Details Section */}
@@ -83,10 +101,10 @@ export default function ProductCard({ product }) {
         <div className="space-y-1">
           {/* Metadata Row: Brand & Stock Status */}
           <div className="flex items-center gap-1 font-['Inter'] text-[9px] sm:text-[11px] font-medium text-neutral-500 flex-wrap">
-            <span className="text-black font-semibold uppercase tracking-wider">{product.brand}</span>
-            <span>•</span>
-            <span className={product.inStock !== false ? 'text-emerald-700 font-semibold' : 'text-neutral-500'}>
-              {product.inStock !== false ? 'In Stock' : 'Out of Stock'}
+            {product.brand && <span className="text-black font-semibold uppercase tracking-wider">{product.brand}</span>}
+            {product.brand && <span>•</span>}
+            <span className={product.inStock === true || Number(product.stock) > 0 ? 'text-emerald-700 font-semibold' : 'text-neutral-500'}>
+              {availability}
             </span>
           </div>
 
@@ -98,31 +116,33 @@ export default function ProductCard({ product }) {
           </Link>
 
           {/* Ratings & Customer Reviews */}
+          {product.rating != null && (
           <div className="flex items-center gap-1 pt-0.5">
             <div className="flex text-amber-500">
-              {[...Array(5)].map((_, i) => (
+              {[...Array(Math.round(product.rating))].map((_, i) => (
                 <Star key={i} className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 fill-amber-500 text-amber-500" />
               ))}
             </div>
             <span className="font-['Inter'] text-[9px] sm:text-[10px] text-neutral-500 font-medium">
-              ({product.reviewsCount || 48})
+              {Number(product.rating).toFixed(1)}{product.reviewsCount != null ? ` (${product.reviewsCount})` : ''}
             </span>
           </div>
+          )}
         </div>
 
         {/* Pricing & Customer Purchase Actions */}
         <div className="pt-2 sm:pt-3 mt-2 sm:mt-3 border-t border-neutral-100 flex flex-col justify-end">
           <div className="flex items-baseline gap-1.5 flex-wrap">
-            {product.price > 0 ? (
+            {hasPrice ? (
               <span className="font-['Manrope'] text-sm sm:text-lg font-bold text-black tracking-tight">
-                ₹{product.price.toLocaleString('en-IN')}
+                ₹{Number(product.price).toLocaleString('en-IN')}
               </span>
             ) : (
-              <span className="font-['Manrope'] text-xs sm:text-sm font-bold text-amber-800 tracking-tight">
-                Price On Request
+              <span className="font-['Manrope'] text-xs sm:text-sm font-bold text-neutral-700 tracking-tight">
+                Price on request
               </span>
             )}
-            {product.mrp && product.mrp > product.price && (
+            {product.mrp != null && hasPrice && product.mrp > product.price && (
               <span className="text-[10px] sm:text-xs text-neutral-400 line-through">
                 ₹{product.mrp.toLocaleString('en-IN')}
               </span>
@@ -132,7 +152,7 @@ export default function ProductCard({ product }) {
             Incl. of taxes
           </p>
 
-          {/* Dual Direct B2C Buttons: Add to Cart & Buy Now */}
+          {canPurchase ? (
           <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-2">
             <button
               onClick={handleAddToCart}
@@ -163,6 +183,15 @@ export default function ProductCard({ product }) {
               <span>Buy</span>
             </button>
           </div>
+          ) : unavailable ? (
+            <button type="button" disabled className="mt-2 w-full bg-neutral-100 text-neutral-500 font-['Inter'] text-[10px] sm:text-xs font-semibold py-2 rounded-lg cursor-not-allowed">
+              Out of Stock
+            </button>
+          ) : (
+            <a href={inquiryUrl} target="_blank" rel="noopener noreferrer" className="mt-2 w-full bg-black text-white font-['Inter'] text-[10px] sm:text-xs font-semibold py-2 rounded-lg flex items-center justify-center">
+              {hasPrice ? 'Check Availability' : 'Request Price'}
+            </a>
+          )}
         </div>
       </div>
     </div>

@@ -1020,11 +1020,11 @@ export default function Account() {
                           <div key={idx} className="p-4 flex items-center justify-between gap-3 text-xs sm:text-sm">
                             <div className="flex items-center gap-3">
                               <img
-                                src={item.image || '/logo.jpeg'}
+                                src={item.image || '/logo.png'}
                                 alt={item.name}
                                 className="w-12 h-12 object-cover rounded-lg border border-neutral-200"
                                 onError={e => {
-                                  e.target.src = '/logo.jpeg';
+                                  e.target.src = '/logo.png';
                                 }}
                               />
                               <div>
@@ -1181,11 +1181,11 @@ export default function Account() {
                                 <div key={idx} className="flex items-center justify-between text-xs">
                                   <div className="flex items-center gap-2.5 min-w-0">
                                     <img
-                                      src={item.image || '/logo.jpeg'}
+                                      src={item.image || '/logo.png'}
                                       alt={item.name}
                                       className="w-9 h-9 object-cover rounded-lg border border-neutral-200 flex-shrink-0"
                                       onError={e => {
-                                        e.target.src = '/logo.jpeg';
+                                        e.target.src = '/logo.png';
                                       }}
                                     />
                                     <span className="font-medium text-black truncate">{item.name}</span>

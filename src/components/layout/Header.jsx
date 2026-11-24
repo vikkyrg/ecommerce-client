@@ -4,6 +4,7 @@ import { Search, ShoppingBag, Heart, User, Menu, Phone, MessageCircle } from 'lu
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import businessConfig from '../../config/businessConfig';
+import logoImg from '../../assets/logo.png';
 
 export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,22 +55,10 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
 
             <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5 group select-none min-w-0">
               <img
-                src="/logo.jpeg"
+                src={logoImg}
                 alt={businessConfig.companyName}
-                className="h-7 w-7 sm:h-9 sm:w-9 lg:h-11 lg:w-11 object-contain rounded-sm transition-transform duration-300 group-hover:scale-103 flex-shrink-0"
-                onError={e => {
-                  e.target.onerror = null;
-                  e.target.style.display = 'none';
-                  const fallback = e.target.nextSibling;
-                  if (fallback) fallback.style.display = 'flex';
-                }}
+                className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 object-contain rounded-md transition-transform duration-300 group-hover:scale-105 flex-shrink-0"
               />
-              <div
-                style={{ display: 'none' }}
-                className="h-7 w-7 sm:h-9 sm:w-9 lg:h-10 lg:w-10 bg-black text-[#ffdf9c] rounded-md items-center justify-center font-['Manrope'] font-bold text-xs sm:text-base tracking-tight border border-neutral-800 flex-shrink-0"
-              >
-                NS
-              </div>
               <div className="flex flex-col justify-center min-w-0">
                 <span className="font-['Manrope'] font-bold text-xs xs:text-sm sm:text-base lg:text-xl tracking-tight text-black leading-tight group-hover:text-amber-900 transition-colors truncate">
                   {businessConfig.companyName}

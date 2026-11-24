@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   SlidersHorizontal,
@@ -13,7 +13,7 @@ import {
   Search,
   ArrowUpDown
 } from 'lucide-react';
-import { fetchProducts, fetchCategories } from '../services/api';
+import { fetchProducts, fetchCategories, fetchBrands } from '../services/api';
 import ProductCard from '../components/products/ProductCard';
 import StaggerContainer from '../components/common/StaggerContainer';
 import ScrollReveal from '../components/common/ScrollReveal';
@@ -22,7 +22,9 @@ export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
+  const [brandsList, setBrandsList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   // Filter states initialized from URL params
@@ -32,13 +34,19 @@ export default function Products() {
   const sortParam = searchParams.get('sort') || 'featured';
   const inStockParam = searchParams.get('inStock') === 'true';
 
-  // Load Categories dynamically from API
+  // Load Categories & Brands dynamically from API
   useEffect(() => {
     fetchCategories()
       .then(data => {
         if (Array.isArray(data)) setCategoriesList(data);
       })
-      .catch(e => console.warn('Categories load note:', e));
+      .catch(e => setLoadError(e.message || 'Failed to load categories'));
+
+    fetchBrands()
+      .then(data => {
+        if (Array.isArray(data)) setBrandsList(data);
+      })
+      .catch(e => console.warn('Failed to load brands list:', e.message));
   }, []);
 
   const categories = [
@@ -46,16 +54,21 @@ export default function Products() {
     ...categoriesList.map(c => c.name)
   ];
 
-  // Extract unique brands dynamically from products
-  const dynamicBrands = Array.from(new Set(products.map(p => p.brand).filter(Boolean))).sort();
-  const brands = ['All Brands', ...dynamicBrands];
+  // Resolve brands dynamically (from brand API or current products fallback)
+  const brands = useMemo(() => {
+    const list = new Set();
+    brandsList.forEach(b => { if (b.name) list.add(b.name); });
+    products.forEach(p => { if (p.brand) list.add(p.brand); });
+    return ['All Brands', ...Array.from(list).sort()];
+  }, [brandsList, products]);
 
   // Load products based on query params
   useEffect(() => {
     const loadProducts = async () => {
       setLoading(true);
+      setLoadError('');
       try {
-        const params = {};
+        const params = { limit: 500 };
         if (categoryParam && categoryParam !== 'All Categories') params.category = categoryParam;
         if (brandParam && brandParam !== 'All Brands') params.brand = brandParam;
         if (searchParam) params.search = searchParam;
@@ -65,7 +78,7 @@ export default function Products() {
         const data = await fetchProducts(params);
         setProducts(data.products || []);
       } catch (err) {
-        console.error('Failed to load products:', err);
+        setLoadError(err.message || 'Failed to load products');
       } finally {
         setLoading(false);
       }
@@ -129,6 +142,12 @@ export default function Products() {
               Showing {products.length} verified products available for direct online purchase.
             </p>
           </div>
+
+          {loadError && (
+            <div role="alert" className="mb-4 p-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-sm">
+              {loadError}
+            </div>
+          )}
 
           {/* Mobile Filter Toggle & Sort Dropdown */}
           <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">

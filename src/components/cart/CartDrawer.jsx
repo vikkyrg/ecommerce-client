@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, Tag, ShieldCheck, Truck, Check } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, Tag, ShieldCheck, Truck, Check, Package } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 
 export default function CartDrawer({ onProceedCheckout }) {
@@ -32,6 +32,9 @@ export default function CartDrawer({ onProceedCheckout }) {
 
   const deliveryCharge = cartSubtotal >= 1999 || cartSubtotal === 0 ? 0 : 150;
   const finalTotal = Math.max(0, cartSubtotal - appliedDiscount + deliveryCharge);
+  const hasUnpricedItems = cartItems.some(item =>
+    item.price === null || item.price === undefined || !Number.isFinite(Number(item.price))
+  );
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -87,11 +90,13 @@ export default function CartDrawer({ onProceedCheckout }) {
                   key={item.id}
                   className="flex gap-3 p-3 bg-neutral-50 rounded-xl border border-neutral-200"
                 >
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-16 h-16 object-contain bg-white rounded-lg border border-neutral-200 p-1 flex-shrink-0"
-                  />
+                  <div className="w-16 h-16 bg-white rounded-lg border border-neutral-200 p-1 flex-shrink-0 flex items-center justify-center">
+                    {item.image ? (
+                      <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                    ) : (
+                      <Package className="w-7 h-7 text-neutral-300" aria-label="No product image" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
                       <div className="flex justify-between items-start gap-1">
@@ -132,7 +137,7 @@ export default function CartDrawer({ onProceedCheckout }) {
                       </div>
 
                       <span className="font-bold text-xs text-black font-['Manrope']">
-                        ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                        {item.price == null ? 'Quote required' : `₹${(Number(item.price) * item.quantity).toLocaleString('en-IN')}`}
                       </span>
                     </div>
                   </div>
@@ -145,6 +150,11 @@ export default function CartDrawer({ onProceedCheckout }) {
           {cartItems.length > 0 && (
             <div className="p-4 sm:p-5 border-t border-neutral-200 bg-neutral-50/70 space-y-3 flex-shrink-0">
               <div className="space-y-1.5 text-xs text-neutral-600">
+                {hasUnpricedItems && (
+                  <p className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-amber-900">
+                    Remove items with unconfirmed pricing before checkout.
+                  </p>
+                )}
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
                   <span className="font-semibold text-black">₹{cartSubtotal.toLocaleString('en-IN')}</span>
@@ -168,6 +178,7 @@ export default function CartDrawer({ onProceedCheckout }) {
               </div>
 
               <button
+                disabled={hasUnpricedItems}
                 onClick={() => {
                   setIsCartOpen(false);
                   if (onProceedCheckout) {
@@ -179,7 +190,7 @@ export default function CartDrawer({ onProceedCheckout }) {
                     });
                   }
                 }}
-                className="w-full bg-black hover:bg-neutral-900 text-[#ffdf9c] font-bold text-xs sm:text-sm py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-98"
+                className="w-full bg-black hover:bg-neutral-900 text-[#ffdf9c] font-bold text-xs sm:text-sm py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span>Proceed to Order</span>
                 <ArrowRight className="w-4 h-4" />

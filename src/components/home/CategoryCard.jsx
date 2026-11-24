@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Layers } from 'lucide-react';
 
 export default function CategoryCard({ category }) {
   const { name, slug, description, image, itemCount } = category;
@@ -13,13 +13,22 @@ export default function CategoryCard({ category }) {
     >
       {/* Category Image with Smooth Zoom */}
       <div className="relative w-full aspect-4/3 rounded-lg overflow-hidden bg-neutral-100 mb-2.5 sm:mb-4">
-        <img
-          src={image}
-          alt={name}
-          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-108"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-300" />
+        {image ? (
+          <img
+            src={image}
+            alt={name}
+            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-108"
+            loading="lazy"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.parentElement.innerHTML = '<div class=\"w-full h-full flex items-center justify-center\"><svg class=\"w-10 h-10 text-neutral-300\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polygon points=\"12 2 2 7 12 12 22 7 12 2\"/><polyline points=\"2 17 12 22 22 17\"/><polyline points=\"2 12 12 17 22 12\"/></svg></div>';
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Layers className="w-10 h-10 text-neutral-300" aria-label="No category image" />
+          </div>
+        )}
         {itemCount && (
           <span className="absolute top-2 right-2 bg-black/75 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-medium font-['Inter'] px-1.5 py-0.5 rounded-full transition-transform group-hover:scale-105">
             {itemCount}

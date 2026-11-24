@@ -21,12 +21,14 @@ export const WishlistProvider = ({ children }) => {
   }, [wishlist]);
 
   const toggleWishlist = product => {
+    const id = product.id || product._id || product.slug;
+    const item = { ...product, id };
     setWishlist(prev => {
-      const exists = prev.some(item => item.id === product.id);
+      const exists = prev.some(existing => existing.id === id);
       if (exists) {
-        return prev.filter(item => item.id !== product.id);
+        return prev.filter(existing => existing.id !== id);
       } else {
-        return [...prev, product];
+        return [...prev, item];
       }
     });
   };

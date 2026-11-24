@@ -27,7 +27,7 @@ export default function Home() {
       try {
         const [cats, prodsData, featured] = await Promise.all([
           fetchCategories(),
-          fetchProducts(),
+          fetchProducts({ limit: 500 }),
           fetchFeaturedProducts()
         ]);
         const productList = Array.isArray(prodsData)
@@ -48,10 +48,6 @@ export default function Home() {
     };
     loadData();
   }, []);
-
-  // Separate the 5 main categories from the Additional Essentials
-  const mainCategories = categories.filter(c => c.name !== 'Additional Essentials');
-  const additionalEssentials = categories.find(c => c.name === 'Additional Essentials');
 
   return (
     <div className="bg-[#f9f9f7] min-h-screen overflow-x-hidden">
@@ -360,7 +356,7 @@ export default function Home() {
                 </div>
                 <div className="relative z-10 pt-5 sm:pt-6">
                   <Link
-                    to="/products?category=Marble+%26+Granite+Polishing"
+                    to="/products?category=Marble+and+Granite+Polishing+Materials"
                     className="inline-flex items-center gap-2 bg-[#ffdf9c] text-black hover:bg-amber-400 font-semibold font-['Inter'] text-xs uppercase tracking-wider px-5 py-2.5 sm:py-3 rounded-xl shadow-xs transition-colors"
                   >
                     <span>Shop Stone Care</span>
@@ -386,7 +382,7 @@ export default function Home() {
                 </div>
                 <div className="relative z-10 pt-5 sm:pt-6">
                   <Link
-                    to="/products?category=Tile+Adhesives+%26+Epoxy+Grouts"
+                    to="/products?category=Tile+Adhesives+and+Epoxy+Grouts"
                     className="inline-flex items-center gap-2 bg-white text-black hover:bg-neutral-100 font-semibold font-['Inter'] text-xs uppercase tracking-wider px-5 py-2.5 sm:py-3 rounded-xl shadow-xs transition-colors"
                   >
                     <span>Shop Adhesives</span>

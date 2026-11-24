@@ -8,11 +8,11 @@ export default function MobileMenu({ isOpen, onClose, onOpenAccountModal }) {
 
   const categories = [
     { label: 'All Products', path: '/products' },
-    { label: 'Marble & Granite Polishing', path: '/products?category=Marble+%26+Granite+Polishing' },
-    { label: 'Tile Adhesives & Grouts', path: '/products?category=Tile+Adhesives+%26+Grouts' },
-    { label: 'Cutting Accessories', path: '/products?category=Cutting+Accessories' },
-    { label: 'Machines & Tools', path: '/products?category=Machines+%26+Tools' },
-    { label: 'Floor Protection', path: '/products?category=Floor+Protection' },
+    { label: 'Marble & Granite Polishing', path: '/products?category=Marble+and+Granite+Polishing+Materials' },
+    { label: 'Tile Adhesives & Grouts', path: '/products?category=Tile+Adhesives+and+Epoxy+Grouts' },
+    { label: 'Cutting Accessories', path: '/products?category=Marble+and+Granite+Cutting+Accessories' },
+    { label: 'Machines & Tools', path: '/products?category=Machines' },
+    { label: 'Floor Protection', path: '/products?category=Floor+Covering+Materials' },
     { label: 'Contact Us', path: '/contact' }
   ];
 

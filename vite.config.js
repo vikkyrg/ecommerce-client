@@ -14,14 +14,13 @@ export default defineConfig({
         secure: false,
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, res) => {
-            // When backend server (localhost:5000) is offline during dev, return a friendly JSON error
-            // so Vite does not spam noisy stack traces and frontend gracefully falls back to catalogData.js
+            // Return a clear API error when the backend is offline during development.
             if (res && !res.headersSent) {
               res.writeHead(503, {
                 'Content-Type': 'application/json',
               });
               res.end(JSON.stringify({
-                message: 'Backend server is offline on port 5000. Running in local fallback mode.'
+                message: 'Backend server is offline on port 5000.'
               }));
             }
           });

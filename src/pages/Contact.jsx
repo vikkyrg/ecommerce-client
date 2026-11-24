@@ -10,9 +10,11 @@ import {
   CheckCircle2,
   ShieldCheck,
   Truck,
-  Headphones
+  Headphones,
+  AlertCircle
 } from 'lucide-react';
 import businessConfig from '../config/businessConfig';
+import { submitEnquiryApi } from '../services/api';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -24,21 +26,28 @@ export default function Contact() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = e => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError('');
 
-    // Simulate clean dispatch/feedback
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await submitEnquiryApi({
+        customerName: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        subject: formData.subject || 'Website General Contact',
+        message: formData.message
+      });
+
       setSubmitted(true);
-      // Construct a mailto backup or whatsapp quick fallback for instant response
       setFormData({
         name: '',
         email: '',
@@ -46,7 +55,11 @@ export default function Contact() {
         subject: '',
         message: ''
       });
-    }, 600);
+    } catch (err) {
+      setError(err.message || 'Unable to submit your message. Please try WhatsApp directly.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

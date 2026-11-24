@@ -11,9 +11,21 @@ export const getAuthHeaders = () => {
   };
 };
 
+// ── Generic fetch helper with timeout ────────────────────────────────────────
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+};
+
 /* ================= AUTH ================= */
 export const loginUserApi = async (email, password) => {
-  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
@@ -24,7 +36,7 @@ export const loginUserApi = async (email, password) => {
 };
 
 export const registerUserApi = async (name, email, phone, password) => {
-  const res = await fetch(`${API_BASE_URL}/auth/register`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email, phone, password })
@@ -35,7 +47,7 @@ export const registerUserApi = async (name, email, phone, password) => {
 };
 
 export const updateProfileApi = async profileData => {
-  const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/auth/profile`, {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(profileData)
@@ -45,68 +57,60 @@ export const updateProfileApi = async profileData => {
   return data;
 };
 
+/* ================= ENQUIRIES ================= */
+export const submitEnquiryApi = async enquiryData => {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/enquiries`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(enquiryData)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to submit enquiry');
+  return data;
+};
+
 /* ================= PRODUCTS ================= */
 export const fetchProducts = async (params = {}) => {
-  try {
-    const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${API_BASE_URL}/products?${query}`);
-    if (!res.ok) throw new Error('Failed to fetch products');
-    const data = await res.json();
-    return data;
-  } catch (error) {
-    console.warn('API error, falling back to local client data:', error);
-    const local = await import('../data/catalogData.js');
-    const filtered = local.filterProducts(params);
-    return {
-      products: filtered,
-      total: filtered.length,
-      page: 1,
-      pages: 1
-    };
-  }
+  const query = new URLSearchParams(params).toString();
+  const res = await fetchWithTimeout(`${API_BASE_URL}/products?${query}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || `Failed to fetch products (HTTP ${res.status})`);
+  return data;
 };
 
 export const fetchFeaturedProducts = async () => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/products/featured`);
-    if (!res.ok) throw new Error('Failed to fetch featured');
-    return await res.json();
-  } catch (error) {
-    const local = await import('../data/catalogData.js');
-    return local.products.filter(p => p.isFeatured || p.isBestSeller).slice(0, 8);
-  }
+  const res = await fetchWithTimeout(`${API_BASE_URL}/products/featured`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || `Failed to fetch featured products (HTTP ${res.status})`);
+  return data;
 };
 
 export const fetchProductById = async id => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/products/${encodeURIComponent(id)}`);
-    if (!res.ok) throw new Error('Product not found');
-    return await res.json();
-  } catch (error) {
-    const local = await import('../data/catalogData.js');
-    const prod = local.products.find(
-      p => p.id === id || p.sku === id || (p.name && p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === id.toLowerCase())
-    );
-    if (!prod) throw new Error('Product not found');
-    return prod;
-  }
+  const res = await fetchWithTimeout(`${API_BASE_URL}/products/${encodeURIComponent(id)}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || `Failed to fetch product (HTTP ${res.status})`);
+  return data;
 };
 
 export const fetchCategories = async () => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/categories`);
-    if (!res.ok) throw new Error('Failed to fetch categories');
-    return await res.json();
-  } catch (error) {
-    const local = await import('../data/catalogData.js');
-    return local.categories;
-  }
+  const res = await fetchWithTimeout(`${API_BASE_URL}/categories`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || `Failed to fetch categories (HTTP ${res.status})`);
+  return data;
+};
+
+export const fetchBrands = async (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  const res = await fetchWithTimeout(`${API_BASE_URL}/brands?${query}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || `Failed to fetch brands (HTTP ${res.status})`);
+  return data;
 };
 
 /* ================= ORDERS ================= */
 export const createOrder = async orderData => {
   try {
-    const res = await fetch(`${API_BASE_URL}/orders`, {
+    const res = await fetchWithTimeout(`${API_BASE_URL}/orders`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(orderData)
@@ -117,7 +121,7 @@ export const createOrder = async orderData => {
     }
     return await res.json();
   } catch (error) {
-    console.warn('Order API offline, generating local order confirmation:', error);
+    console.warn('[API] Order API offline, generating local order confirmation:', error.message);
     const orderNumber = `NSC-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
     const mockOrder = {
       _id: `ord-${Date.now()}`,
@@ -132,7 +136,7 @@ export const createOrder = async orderData => {
 };
 
 export const fetchOrderById = async id => {
-  const res = await fetch(`${API_BASE_URL}/orders/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/orders/${id}`, {
     headers: getAuthHeaders()
   });
   if (!res.ok) throw new Error('Order not found');
@@ -140,7 +144,7 @@ export const fetchOrderById = async id => {
 };
 
 export const fetchMyOrders = async () => {
-  const res = await fetch(`${API_BASE_URL}/orders/myorders`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/orders/myorders`, {
     headers: getAuthHeaders()
   });
   if (!res.ok) throw new Error('Failed to fetch orders');
@@ -148,7 +152,7 @@ export const fetchMyOrders = async () => {
 };
 
 export const trackOrderApi = async (orderNumber, phone) => {
-  const res = await fetch(`${API_BASE_URL}/orders/track`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/orders/track`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orderNumber, phone })
@@ -160,7 +164,7 @@ export const trackOrderApi = async (orderNumber, phone) => {
 
 export const validateCouponApi = async (code, cartTotal) => {
   try {
-    const res = await fetch(`${API_BASE_URL}/coupons/validate`, {
+    const res = await fetchWithTimeout(`${API_BASE_URL}/coupons/validate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code, cartTotal })
@@ -179,7 +183,7 @@ export const validateCouponApi = async (code, cartTotal) => {
 };
 
 export const sendContactMessage = async contactData => {
-  const res = await fetch(`${API_BASE_URL}/contact`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/contact`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(contactData)

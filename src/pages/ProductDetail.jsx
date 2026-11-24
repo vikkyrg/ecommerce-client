@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import {
   Star,
   ShoppingBag,
@@ -17,41 +17,63 @@ import {
   Sparkles,
   Award,
   MessageCircle,
-  Phone,
-  Check
+  Check,
+  Package
 } from 'lucide-react';
-import { products } from '../data/catalogData';
+import { fetchProductById, fetchProducts } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import ProductCard from '../components/products/ProductCard';
-import businessConfig from '../config/businessConfig';
 
 export default function ProductDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { addToCart, setIsCartOpen } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
 
   const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariant, setSelectedVariant] = useState(null);
   const [addedNotice, setAddedNotice] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
 
   useEffect(() => {
-    const found = products.find(p => p.id === id || p.sku === id);
-    if (found) {
-      setProduct(found);
-      setSelectedVariant(found.size || 'Standard Pack');
-      window.scrollTo(0, 0);
-    }
+    let active = true;
+    setProduct(null);
+    setRelatedProducts([]);
+    setLoading(true);
+    setLoadError('');
+    fetchProductById(id)
+      .then(async found => {
+        if (!active) return;
+        setProduct(found);
+        window.scrollTo(0, 0);
+        const related = await fetchProducts({ category: found.category, limit: 5 });
+        if (active) {
+          setRelatedProducts((related.products || [])
+            .filter(item => String(item._id || item.id || item.slug) !== String(found._id || found.id || found.slug))
+            .slice(0, 4));
+        }
+      })
+      .catch(error => {
+        if (active) setLoadError(error.message || 'Unable to load this product');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
   }, [id]);
+
+  if (loading) {
+    return <div className="site-container py-20 text-center text-sm text-neutral-500">Loading product details...</div>;
+  }
 
   if (!product) {
     return (
       <div className="site-container py-20 text-center">
         <h2 className="font-['Manrope'] font-bold text-2xl text-black">Product Not Found</h2>
-        <p className="text-sm text-neutral-500 mt-2">The product you are looking for does not exist or has been moved.</p>
+        <p className="text-sm text-neutral-500 mt-2">{loadError || 'The product you are looking for does not exist or has been moved.'}</p>
         <Link
           to="/products"
           className="mt-6 inline-block bg-black text-[#ffdf9c] font-semibold text-xs px-5 py-2.5 rounded-md"
@@ -62,7 +84,19 @@ export default function ProductDetail() {
     );
   }
 
-  const isWishlisted = isInWishlist(product.id);
+  const productId = product.id || product._id || product.slug;
+  const isWishlisted = isInWishlist(productId);
+  const hasPrice = product.price !== null && product.price !== undefined &&
+    product.price !== '' && Number.isFinite(Number(product.price));
+  const unavailable = product.inStock === false || product.stock === 0;
+  const hasStockConfirmation = product.inStock === true ||
+    (product.stock !== null && product.stock !== undefined && Number.isFinite(Number(product.stock)));
+  const canPurchase = hasPrice && hasStockConfirmation && !unavailable;
+  const availability = unavailable
+    ? 'Out of Stock'
+    : product.inStock === true || Number(product.stock) > 0
+      ? 'In Stock'
+      : 'Availability on request';
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
@@ -74,10 +108,6 @@ export default function ProductDetail() {
     addToCart(product, quantity);
     setIsCartOpen(true);
   };
-
-  const relatedProducts = products
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
 
   return (
     <div className="bg-[#f9f9f7] min-h-screen py-4 sm:py-8 lg:py-10">
@@ -97,7 +127,7 @@ export default function ProductDetail() {
             to={`/products?category=${encodeURIComponent(product.category)}`}
             className="hover:text-black transition-colors truncate max-w-[160px] sm:max-w-[200px]"
           >
-            {product.category}
+            {product.categoryName || product.category}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
           <span className="text-black font-semibold truncate max-w-[180px] sm:max-w-[240px]">
@@ -111,11 +141,19 @@ export default function ProductDetail() {
           {/* Left Column: Product Image Gallery */}
           <div className="lg:col-span-6 space-y-4">
             <div className="relative aspect-square w-full rounded-2xl bg-neutral-50 border border-neutral-200 p-6 sm:p-8 flex items-center justify-center overflow-hidden">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-full max-h-[300px] sm:max-h-[380px] object-contain transition-transform duration-300 hover:scale-105"
-              />
+              {product.image ? (
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-full max-h-[300px] sm:max-h-[380px] object-contain transition-transform duration-300 hover:scale-105"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = '<span class=\"flex items-center justify-center w-full h-full\"><svg class=\"w-16 h-16 text-neutral-300\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"m7.5 4.27 9 5.15\"/><path d=\"M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z\"/><path d=\"m3.3 7 8.7 5 8.7-5\"/><path d=\"M12 22V12\"/></svg></span>';
+                  }}
+                />
+              ) : (
+                <Package className="w-16 h-16 text-neutral-300" aria-label="No product image" />
+              )}
               {product.discount > 0 && (
                 <span className="absolute top-3.5 left-3.5 bg-amber-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-md shadow-xs">
                   {product.discount}% OFF
@@ -161,12 +199,14 @@ export default function ProductDetail() {
               
               {/* Brand, Stock, SKU */}
               <div className="flex items-center gap-2 text-xs text-neutral-500 font-medium flex-wrap">
-                <span className="bg-neutral-100 text-neutral-800 px-2.5 py-1 rounded font-bold uppercase tracking-wider text-[10px]">
-                  {product.brand}
-                </span>
-                <span>•</span>
-                <span className={product.inStock ? 'text-emerald-700 font-semibold' : 'text-neutral-500'}>
-                  {product.inStock ? 'In Stock (Ready to Ship)' : 'Currently Unavailable'}
+                {product.brand && (
+                  <span className="bg-neutral-100 text-neutral-800 px-2.5 py-1 rounded font-bold uppercase tracking-wider text-[10px]">
+                    {product.brand}
+                  </span>
+                )}
+                {product.brand && <span>•</span>}
+                <span className={product.inStock === true || Number(product.stock) > 0 ? 'text-emerald-700 font-semibold' : 'text-neutral-500'}>
+                  {availability}
                 </span>
                 {product.sku && (
                   <>
@@ -181,36 +221,43 @@ export default function ProductDetail() {
                 {product.name}
               </h1>
 
-              {/* Reviews & Ratings */}
-              <div className="flex items-center gap-2">
-                <div className="flex text-amber-500">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-amber-500 text-amber-500" />
-                  ))}
+              {product.rating != null && (
+                <div className="flex items-center gap-2">
+                  <div className="flex text-amber-500">
+                    {[...Array(Math.round(product.rating))].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-amber-500 text-amber-500" />
+                    ))}
+                  </div>
+                  <span className="text-xs font-semibold text-neutral-700">{Number(product.rating).toFixed(1)}</span>
+                  {product.reviewsCount != null && (
+                    <span className="text-xs text-neutral-400">({product.reviewsCount} customer reviews)</span>
+                  )}
                 </div>
-                <span className="text-xs font-semibold text-neutral-700">4.8</span>
-                <span className="text-xs text-neutral-400">({product.reviewsCount || 48} customer reviews)</span>
-              </div>
+              )}
 
               {/* Price & Tax details */}
               <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200 space-y-1">
                 <div className="flex items-baseline gap-3">
-                  <span className="font-['Manrope'] font-extrabold text-2xl sm:text-3xl text-black">
-                    ₹{product.price.toLocaleString('en-IN')}
-                  </span>
-                  {product.mrp && product.mrp > product.price && (
+                  {hasPrice ? (
+                    <span className="font-['Manrope'] font-extrabold text-2xl sm:text-3xl text-black">
+                      ₹{Number(product.price).toLocaleString('en-IN')}
+                    </span>
+                  ) : (
+                    <span className="font-['Manrope'] font-bold text-xl text-neutral-800">Price on request</span>
+                  )}
+                  {product.mrp != null && hasPrice && product.mrp > product.price && (
                     <span className="text-sm sm:text-base text-neutral-400 line-through">
-                      ₹{product.mrp.toLocaleString('en-IN')}
+                      ₹{Number(product.mrp).toLocaleString('en-IN')}
                     </span>
                   )}
-                  {product.discount > 0 && (
+                  {product.discount > 0 && product.mrp != null && hasPrice && (
                     <span className="text-xs font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded">
                       Save ₹{(product.mrp - product.price).toLocaleString('en-IN')}
                     </span>
                   )}
                 </div>
                 <p className="text-[11px] text-neutral-500 font-['Inter']">
-                  Price inclusive of all taxes. Free shipping on orders over ₹1,999.
+                  {hasPrice ? 'Price inclusive of all taxes. Free shipping on orders over ₹1,999.' : 'Contact us for current pricing and availability.'}
                 </p>
               </div>
 
@@ -227,60 +274,73 @@ export default function ProductDetail() {
               )}
 
               {/* Short Description */}
-              <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-['Inter']">
-                {product.description}
-              </p>
+              {product.description && (
+                <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-['Inter']">
+                  {product.description}
+                </p>
+              )}
 
-              {/* Quantity Selector & Action Buttons */}
+              {/* Purchase controls are shown only when the catalog has a confirmed price. */}
               <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-semibold text-neutral-700">Quantity:</span>
-                  <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden bg-white">
-                    <button
-                      onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                      className="p-2 hover:bg-neutral-100 transition-colors cursor-pointer text-neutral-600"
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="w-10 text-center font-bold text-xs text-black">{quantity}</span>
-                    <button
-                      onClick={() => setQuantity(q => q + 1)}
-                      className="p-2 hover:bg-neutral-100 transition-colors cursor-pointer text-neutral-600"
-                      aria-label="Increase quantity"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
+                {canPurchase ? (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-semibold text-neutral-700">Quantity:</span>
+                      <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden bg-white">
+                        <button
+                          onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                          className="p-2 hover:bg-neutral-100 transition-colors cursor-pointer text-neutral-600"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="w-10 text-center font-bold text-xs text-black">{quantity}</span>
+                        <button
+                          onClick={() => setQuantity(q => q + 1)}
+                          className="p-2 hover:bg-neutral-100 transition-colors cursor-pointer text-neutral-600"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
 
-                {/* Primary Dual B2C Action Buttons */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                  <button
-                    onClick={handleAddToCart}
-                    className="w-full bg-[#f4f4f2] hover:bg-neutral-200 text-black font-semibold text-xs sm:text-sm py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 border border-neutral-300 transition-all cursor-pointer active:scale-98"
-                  >
-                    {addedNotice ? (
-                      <>
-                        <Check className="w-4 h-4 text-emerald-600" />
-                        <span className="text-emerald-700 font-bold">Added to Cart!</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBag className="w-4 h-4" />
-                        <span>Add to Cart</span>
-                      </>
-                    )}
-                  </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                      <button
+                        onClick={handleAddToCart}
+                        className="w-full bg-[#f4f4f2] hover:bg-neutral-200 text-black font-semibold text-xs sm:text-sm py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 border border-neutral-300 transition-all cursor-pointer active:scale-98"
+                      >
+                        {addedNotice ? (
+                          <>
+                            <Check className="w-4 h-4 text-emerald-600" />
+                            <span className="text-emerald-700 font-bold">Added to Cart!</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingBag className="w-4 h-4" />
+                            <span>Add to Cart</span>
+                          </>
+                        )}
+                      </button>
 
-                  <button
-                    onClick={handleBuyNow}
-                    className="w-full bg-black hover:bg-neutral-900 text-[#ffdf9c] font-bold text-xs sm:text-sm py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 shadow-md"
-                  >
-                    <Zap className="w-4 h-4 fill-[#ffdf9c]" />
-                    <span>Buy Now</span>
-                  </button>
-                </div>
+                      <button
+                        onClick={handleBuyNow}
+                        className="w-full bg-black hover:bg-neutral-900 text-[#ffdf9c] font-bold text-xs sm:text-sm py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 shadow-md"
+                      >
+                        <Zap className="w-4 h-4 fill-[#ffdf9c]" />
+                        <span>Buy Now</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                    {unavailable
+                      ? 'This product is currently unavailable.'
+                      : !hasPrice
+                        ? 'Price and stock are not listed. Contact us for a quote.'
+                        : 'Stock availability is not confirmed. Contact us before ordering.'}
+                  </p>
+                )}
               </div>
 
               {/* WhatsApp Technical Assistance Button */}
@@ -334,29 +394,22 @@ export default function ProductDetail() {
           <div className="pt-5 text-xs sm:text-sm text-neutral-600 leading-relaxed font-['Inter']">
             {activeTab === 'description' && (
               <div className="space-y-3">
-                <p>{product.description}</p>
-                <p>
-                  Manufactured according to stringent European and Indian surface care standards. Suitable for professional stonemasons, contractors, and home DIY restorers seeking high-gloss finish, oil and water repellence, and long-lasting durability.
-                </p>
+                <p>{product.description || 'No product description is available.'}</p>
               </div>
             )}
             {activeTab === 'specs' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
                 <div className="flex justify-between py-2 border-b border-neutral-100">
                   <span className="text-neutral-500">Brand:</span>
-                  <span className="font-semibold text-black">{product.brand}</span>
+                  <span className="font-semibold text-black">{product.brand || 'Not specified'}</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-neutral-100">
                   <span className="text-neutral-500">Category:</span>
-                  <span className="font-semibold text-black">{product.category}</span>
+                  <span className="font-semibold text-black">{product.categoryName || product.category}</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-neutral-100">
                   <span className="text-neutral-500">Packaging:</span>
-                  <span className="font-semibold text-black">{product.size || '1 Unit'}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-neutral-100">
-                  <span className="text-neutral-500">Origin:</span>
-                  <span className="font-semibold text-black">Original Brand Stock</span>
+                  <span className="font-semibold text-black">{product.size || product.variants?.map(variant => variant.size || variant.name).filter(Boolean).join(', ') || 'Not specified'}</span>
                 </div>
               </div>
             )}
