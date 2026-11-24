@@ -294,8 +294,22 @@ export default function AccountModal({ isOpen, onClose, initialTab = 'signin' })
                 </div>
               </div>
 
-              {/* Navigation Options */}
+              {/* Navigation Options - Enhanced with full dashboard access */}
               <div className="space-y-1 text-xs">
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate('/account?tab=overview');
+                  }}
+                  className="w-full text-left p-3 rounded-xl hover:bg-neutral-100 flex items-center justify-between text-neutral-800 transition-colors cursor-pointer group"
+                >
+                  <span className="flex items-center gap-2.5 font-medium">
+                    <User className="w-4 h-4 text-[#D4A83F] group-hover:text-black transition-colors" />
+                    Account Dashboard &amp; Overview
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-black transition-colors" />
+                </button>
+
                 <button
                   onClick={() => {
                     onClose();
@@ -306,6 +320,20 @@ export default function AccountModal({ isOpen, onClose, initialTab = 'signin' })
                   <span className="flex items-center gap-2.5 font-medium">
                     <Package className="w-4 h-4 text-neutral-600 group-hover:text-black transition-colors" />
                     My Orders &amp; Tracking
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-black transition-colors" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate('/account?tab=profile');
+                  }}
+                  className="w-full text-left p-3 rounded-xl hover:bg-neutral-100 flex items-center justify-between text-neutral-800 transition-colors cursor-pointer group"
+                >
+                  <span className="flex items-center gap-2.5 font-medium">
+                    <ShieldCheck className="w-4 h-4 text-neutral-600 group-hover:text-black transition-colors" />
+                    My Profile &amp; Contact Info
                   </span>
                   <ArrowRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-black transition-colors" />
                 </button>
@@ -327,7 +355,7 @@ export default function AccountModal({ isOpen, onClose, initialTab = 'signin' })
                 <button
                   onClick={() => {
                     onClose();
-                    navigate('/wishlist');
+                    navigate('/account?tab=wishlist');
                   }}
                   className="w-full text-left p-3 rounded-xl hover:bg-neutral-100 flex items-center justify-between text-neutral-800 transition-colors cursor-pointer group"
                 >
