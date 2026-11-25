@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/apiClient';
 
 export default function AdminDashboard() {
   const { user, isAdmin } = useAuth();
@@ -44,8 +45,6 @@ export default function AdminDashboard() {
   });
   const [formMsg, setFormMsg] = useState('');
 
-  const token = localStorage.getItem('ns_stone_token');
-
   useEffect(() => {
     if (!isAdmin) {
       navigate('/login?redirect=/admin/dashboard');
@@ -53,21 +52,16 @@ export default function AdminDashboard() {
     }
 
     Promise.all([
-      fetch('/api/products?activeOnly=false&limit=300'),
-      fetch('/api/categories?all=true', { headers: { Authorization: `Bearer ${token}` } }),
-      fetch('/api/brands?activeOnly=false', { headers: { Authorization: `Bearer ${token}` } }),
-      fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } })
+      api.get('/products', { params: { activeOnly: false, limit: 300 } }),
+      api.get('/categories', { params: { all: true } }),
+      api.get('/brands', { params: { activeOnly: false } }),
+      api.get('/orders')
     ])
-      .then(async ([productsResponse, categoriesResponse, brandsResponse, ordersResponse]) => {
-        const [prodsData, categoryData, brandData, ordersData] = await Promise.all([
-          productsResponse.json(),
-          categoriesResponse.json(),
-          brandsResponse.json(),
-          ordersResponse.json()
-        ]);
-        if (!productsResponse.ok || !categoriesResponse.ok || !brandsResponse.ok || !ordersResponse.ok) {
-          throw new Error(prodsData.message || categoryData.message || brandData.message || ordersData.message || 'Failed to load admin data');
-        }
+      .then(([productsResponse, categoriesResponse, brandsResponse, ordersResponse]) => {
+        const prodsData = productsResponse.data;
+        const categoryData = categoriesResponse.data;
+        const brandData = brandsResponse.data;
+        const ordersData = ordersResponse.data;
         setProducts(Array.isArray(prodsData?.products) ? prodsData.products : []);
         setCategories(Array.isArray(categoryData) ? categoryData : []);
         setBrands(Array.isArray(brandData) ? brandData : []);
@@ -76,29 +70,20 @@ export default function AdminDashboard() {
       })
       .catch(error => setLoadError(error.message || 'Failed to load admin data'))
       .finally(() => setLoading(false));
-  }, [isAdmin, navigate, token]);
+  }, [isAdmin, navigate]);
 
   const handleCreateProduct = async e => {
     e.preventDefault();
     setFormMsg('');
 
     try {
-      const res = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
+      const { data } = await api.post('/products', {
           ...newProduct,
           image: '',
           price: newProduct.price === '' ? null : Number(newProduct.price),
           mrp: newProduct.mrp === '' ? null : Number(newProduct.mrp),
           stock: newProduct.stock === '' ? null : Number(newProduct.stock)
-        })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to create product');
 
       setProducts(prev => [data, ...prev]);
       setShowAddModal(false);
@@ -122,12 +107,7 @@ export default function AdminDashboard() {
   const handleDeleteProduct = async id => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     try {
-      const res = await fetch(`/api/products/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to delete product');
+      await api.delete(`/products/${encodeURIComponent(id)}`);
       setProducts(prev => prev.filter(p => (p._id || p.id) !== id));
     } catch (error) {
       setLoadError(error.message || 'Failed to delete product');
@@ -136,19 +116,13 @@ export default function AdminDashboard() {
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
-      const res = await fetch(`/api/orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ orderStatus: newStatus })
+      const { data } = await api.put(`/orders/${encodeURIComponent(orderId)}/status`, {
+        orderStatus: newStatus
       });
-      if (res.ok) {
-        const updated = await res.json();
-        setOrders(prev => prev.map(o => (o._id === orderId || o.orderNumber === orderId ? updated : o)));
-      }
-    } catch (e) {}
+      setOrders(prev => prev.map(o => (o._id === orderId || o.orderNumber === orderId ? data : o)));
+    } catch (error) {
+      setLoadError(error.message || 'Failed to update order status');
+    }
   };
 
   if (!isAdmin) return null;

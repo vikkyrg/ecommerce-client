@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { resolveImageUrl } from '../services/apiClient';
 
 const CartContext = createContext();
 
@@ -6,7 +7,10 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState(() => {
     try {
       const saved = localStorage.getItem('ns_stone_cart');
-      return saved ? JSON.parse(saved) : [];
+      const items = saved ? JSON.parse(saved) : [];
+      return Array.isArray(items)
+        ? items.map(item => ({ ...item, image: resolveImageUrl(item.image) }))
+        : [];
     } catch (e) {
       return [];
     }
