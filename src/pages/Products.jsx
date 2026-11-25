@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, useParams, Link } from 'react-router-dom';
 import {
   SlidersHorizontal,
   X,
@@ -20,6 +20,7 @@ import ScrollReveal from '../components/common/ScrollReveal';
 
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const routeParams = useParams();
   const [products, setProducts] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
   const [brandsList, setBrandsList] = useState([]);
@@ -27,8 +28,8 @@ export default function Products() {
   const [loadError, setLoadError] = useState('');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
-  // Filter states initialized from URL params
-  const categoryParam = searchParams.get('category') || 'All Categories';
+  // Filter states initialized from URL params (search params or /categories/:slug route)
+  const categoryParam = searchParams.get('category') || routeParams.slug || 'All Categories';
   const brandParam = searchParams.get('brand') || 'All Brands';
   const searchParam = searchParams.get('search') || '';
   const sortParam = searchParams.get('sort') || 'featured';
@@ -49,10 +50,43 @@ export default function Products() {
       .catch(e => console.warn('Failed to load brands list:', e.message));
   }, []);
 
-  const categories = [
-    'All Categories',
-    ...categoriesList.map(c => c.name)
-  ];
+  // Find active category object if any
+  const activeCategoryObj = useMemo(() => {
+    if (!categoryParam || categoryParam === 'All Categories' || categoryParam === 'All Products' || categoryParam === 'All') {
+      return null;
+    }
+    const cleanParam = categoryParam.toLowerCase().trim();
+    return categoriesList.find(c => {
+      const slug = (c.slug || '').toLowerCase().trim();
+      const name = (c.name || '').toLowerCase().trim();
+      const id = (c._id || c.id || '').toString();
+      return (
+        cleanParam === slug ||
+        cleanParam === name ||
+        cleanParam === id ||
+        cleanParam.replace(/-/g, ' ') === name ||
+        slug.replace(/-/g, ' ') === cleanParam
+      );
+    }) || null;
+  }, [categoryParam, categoriesList]);
+
+  // Display title for current category
+  const categoryDisplayName = useMemo(() => {
+    if (!categoryParam || categoryParam === 'All Categories' || categoryParam === 'All Products' || categoryParam === 'All') {
+      return 'All Categories';
+    }
+    return activeCategoryObj ? activeCategoryObj.name : categoryParam;
+  }, [categoryParam, activeCategoryObj]);
+
+  const categories = useMemo(() => {
+    return [
+      { name: 'All Categories', slug: 'All Categories' },
+      ...categoriesList.map(c => ({
+        name: c.name,
+        slug: c.slug || c.name
+      }))
+    ];
+  }, [categoriesList]);
 
   // Resolve brands dynamically (from brand API or current products fallback)
   const brands = useMemo(() => {
@@ -64,28 +98,44 @@ export default function Products() {
 
   // Load products based on query params
   useEffect(() => {
+    let isCancelled = false;
+
     const loadProducts = async () => {
       setLoading(true);
       setLoadError('');
       try {
         const params = { limit: 500 };
-        if (categoryParam && categoryParam !== 'All Categories') params.category = categoryParam;
+        const isAllSelected = !categoryParam || categoryParam === 'All Categories' || categoryParam === 'All Products' || categoryParam === 'All';
+        
+        if (!isAllSelected) {
+          params.category = activeCategoryObj?.slug || categoryParam;
+        }
         if (brandParam && brandParam !== 'All Brands') params.brand = brandParam;
         if (searchParam) params.search = searchParam;
         if (sortParam) params.sort = sortParam;
         if (inStockParam) params.inStock = 'true';
 
         const data = await fetchProducts(params);
-        setProducts(data.products || []);
+        if (!isCancelled) {
+          setProducts(data.products || []);
+        }
       } catch (err) {
-        setLoadError(err.message || 'Failed to load products');
+        if (!isCancelled) {
+          setLoadError(err.message || 'Failed to load products');
+        }
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     };
 
     loadProducts();
-  }, [categoryParam, brandParam, searchParam, sortParam, inStockParam]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [categoryParam, activeCategoryObj?.slug, brandParam, searchParam, sortParam, inStockParam]);
 
   const updateFilters = newParams => {
     const current = Object.fromEntries(searchParams.entries());
@@ -122,11 +172,11 @@ export default function Products() {
           <Link to="/products" className="hover:text-black transition-colors">
             Catalog
           </Link>
-          {categoryParam !== 'All Categories' && (
+          {categoryDisplayName !== 'All Categories' && (
             <>
               <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
               <span className="text-black font-semibold truncate max-w-[200px]">
-                {categoryParam}
+                {categoryDisplayName}
               </span>
             </>
           )}
@@ -136,7 +186,7 @@ export default function Products() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 sm:pb-6 mb-4 sm:mb-6 border-b border-neutral-200 gap-3">
           <div>
             <h1 className="font-['Manrope'] font-bold text-xl sm:text-2xl lg:text-3xl text-black tracking-tight">
-              {categoryParam !== 'All Categories' ? categoryParam : 'All Stone Care Products'}
+              {categoryDisplayName !== 'All Categories' ? categoryDisplayName : 'All Stone Care Products'}
             </h1>
             <p className="font-['Inter'] text-xs sm:text-sm text-neutral-500 mt-1">
               Showing {products.length} verified products available for direct online purchase.
@@ -185,9 +235,9 @@ export default function Products() {
         {activeFiltersCount > 0 && (
           <div className="flex items-center gap-2 flex-wrap mb-4 pb-3 border-b border-neutral-200 text-xs">
             <span className="text-neutral-500 font-medium">Active:</span>
-            {categoryParam !== 'All Categories' && (
+            {categoryDisplayName !== 'All Categories' && (
               <span className="inline-flex items-center gap-1.5 bg-neutral-200/80 px-2.5 py-1 rounded-full font-medium text-neutral-800 text-[11px]">
-                {categoryParam}
+                {categoryDisplayName}
                 <X
                   className="w-3 h-3 cursor-pointer hover:text-black"
                   onClick={() => updateFilters({ category: 'All Categories' })}
@@ -245,20 +295,26 @@ export default function Products() {
             <div>
               <h4 className="font-semibold text-xs text-black mb-2.5">Categories</h4>
               <div className="space-y-1">
-                {categories.map(c => (
-                  <button
-                    key={c}
-                    onClick={() => updateFilters({ category: c })}
-                    className={`w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-between ${
-                      categoryParam === c
-                        ? 'bg-black text-[#ffdf9c] font-bold'
-                        : 'text-neutral-700 hover:bg-neutral-100'
-                    }`}
-                  >
-                    <span className="truncate">{c}</span>
-                    {categoryParam === c && <Check className="w-3.5 h-3.5 flex-shrink-0" />}
-                  </button>
-                ))}
+                {categories.map(c => {
+                  const isCatSelected =
+                    (c.slug === 'All Categories' && (categoryDisplayName === 'All Categories' || !categoryParam)) ||
+                    (c.slug !== 'All Categories' && (categoryParam === c.slug || categoryParam === c.name || activeCategoryObj?.slug === c.slug));
+
+                  return (
+                    <button
+                      key={c.slug}
+                      onClick={() => updateFilters({ category: c.slug })}
+                      className={`w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-between ${
+                        isCatSelected
+                          ? 'bg-black text-[#ffdf9c] font-bold'
+                          : 'text-neutral-700 hover:bg-neutral-100'
+                      }`}
+                    >
+                      <span className="truncate">{c.name}</span>
+                      {isCatSelected && <Check className="w-3.5 h-3.5 flex-shrink-0" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -316,14 +372,14 @@ export default function Products() {
                 </button>
               </div>
             ) : (
-              <StaggerContainer
-                staggerDelay={50}
+              <div
+                key={`${categoryParam}-${brandParam}-${sortParam}`}
                 className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-5"
               >
                 {products.map(product => (
                   <ProductCard key={product.id || product._id || product.sku} product={product} />
                 ))}
-              </StaggerContainer>
+              </div>
             )}
           </main>
         </div>
@@ -360,20 +416,26 @@ export default function Products() {
               <div>
                 <h4 className="font-bold text-neutral-900 mb-2">Category</h4>
                 <div className="space-y-1">
-                  {categories.map(c => (
-                    <button
-                      key={c}
-                      onClick={() => updateFilters({ category: c })}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between ${
-                        categoryParam === c
-                          ? 'bg-black text-[#ffdf9c]'
-                          : 'bg-neutral-50 text-neutral-700'
-                      }`}
-                    >
-                      <span>{c}</span>
-                      {categoryParam === c && <Check className="w-4 h-4" />}
-                    </button>
-                  ))}
+                  {categories.map(c => {
+                    const isCatSelected =
+                      (c.slug === 'All Categories' && (categoryDisplayName === 'All Categories' || !categoryParam)) ||
+                      (c.slug !== 'All Categories' && (categoryParam === c.slug || categoryParam === c.name || activeCategoryObj?.slug === c.slug));
+
+                    return (
+                      <button
+                        key={c.slug}
+                        onClick={() => updateFilters({ category: c.slug })}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between ${
+                          isCatSelected
+                            ? 'bg-black text-[#ffdf9c]'
+                            : 'bg-neutral-50 text-neutral-700'
+                        }`}
+                      >
+                        <span>{c.name}</span>
+                        {isCatSelected && <Check className="w-4 h-4" />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

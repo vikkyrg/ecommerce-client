@@ -1,20 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ChevronRight, Phone, ShieldCheck, User, MessageCircle, Mail } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import businessConfig from '../../config/businessConfig';
+import { fetchCategories } from '../../services/api';
 
 export default function MobileMenu({ isOpen, onClose, onOpenAccountModal }) {
-  if (!isOpen) return null;
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [searchParams] = useSearchParams();
+  const currentCategory = searchParams.get('category') || '';
 
-  const categories = [
-    { label: 'All Products', path: '/products' },
-    { label: 'Marble & Granite Polishing', path: '/products?category=Marble+and+Granite+Polishing+Materials' },
-    { label: 'Tile Adhesives & Grouts', path: '/products?category=Tile+Adhesives+and+Epoxy+Grouts' },
-    { label: 'Cutting Accessories', path: '/products?category=Marble+and+Granite+Cutting+Accessories' },
-    { label: 'Machines & Tools', path: '/products?category=Machines' },
-    { label: 'Floor Protection', path: '/products?category=Floor+Covering+Materials' },
-    { label: 'Contact Us', path: '/contact' }
-  ];
+  useEffect(() => {
+    if (isOpen) {
+      fetchCategories()
+        .then(data => {
+          if (Array.isArray(data)) setCategoriesList(data.filter(c => c.isActive !== false));
+        })
+        .catch(err => console.warn('MobileMenu categories load error:', err));
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex lg:hidden">
@@ -75,17 +80,47 @@ export default function MobileMenu({ isOpen, onClose, onOpenAccountModal }) {
             Navigation &amp; Categories
           </div>
           <nav className="space-y-0.5 px-2">
-            {categories.map((item, idx) => (
-              <Link
-                key={idx}
-                to={item.path}
-                onClick={onClose}
-                className="flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium text-neutral-800 hover:bg-neutral-100 transition-colors"
-              >
-                <span>{item.label}</span>
-                <ChevronRight className="w-4 h-4 text-neutral-400" />
-              </Link>
-            ))}
+            {/* All Products */}
+            <Link
+              to="/products"
+              onClick={onClose}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                !currentCategory ? 'bg-black text-[#ffdf9c] font-bold' : 'text-neutral-800 hover:bg-neutral-100'
+              }`}
+            >
+              <span>All Products</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+
+            {/* Dynamic Categories */}
+            {categoriesList.map(cat => {
+              const catSlug = cat.slug || encodeURIComponent(cat.name);
+              const isActive = currentCategory === cat.slug || currentCategory === cat.name;
+
+              return (
+                <Link
+                  key={cat._id || cat.slug}
+                  to={`/products?category=${catSlug}`}
+                  onClick={onClose}
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                    isActive ? 'bg-black text-[#ffdf9c] font-bold' : 'text-neutral-800 hover:bg-neutral-100'
+                  }`}
+                >
+                  <span>{cat.name}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              );
+            })}
+
+            {/* Contact Us */}
+            <Link
+              to="/contact"
+              onClick={onClose}
+              className="flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium text-neutral-800 hover:bg-neutral-100 transition-colors"
+            >
+              <span>Contact Us</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
           </nav>
         </div>
 
