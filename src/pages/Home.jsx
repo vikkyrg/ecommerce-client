@@ -21,6 +21,7 @@ export default function Home() {
   const [allProducts, setAllProducts] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     const loadData = async () => {
@@ -41,6 +42,7 @@ export default function Home() {
         setAllProducts(productList);
         setFeaturedProducts(featuredList.length > 0 ? featuredList : productList.slice(0, 8));
       } catch (err) {
+        setLoadError(err.message || 'Store data is currently unavailable.');
         console.error('Error loading home data:', err);
       } finally {
         setLoading(false);
@@ -241,6 +243,14 @@ export default function Home() {
           </div>
         </ScrollReveal>
       </section>
+
+      {loadError && (
+        <div className="site-container py-3">
+          <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+            Store data could not be loaded: {loadError}
+          </p>
+        </div>
+      )}
 
       {/* =========================================================================
           SECTION 2: SHOP BY CATEGORY

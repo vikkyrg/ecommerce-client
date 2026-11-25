@@ -78,9 +78,14 @@ api.interceptors.response.use(
     return response;
   },
   error => {
-    const message = error.response?.data?.message;
+    const responseBody = error.response?.data;
+    const message = typeof responseBody === 'string'
+      ? responseBody.trim().slice(0, 200)
+      : responseBody?.message;
     if (message) error.message = message;
-    else if (error.code === 'ECONNABORTED') error.message = 'Request timed out.';
+    else if (error.response) error.message = `API request failed (HTTP ${error.response.status}).`;
+    else if (error.code === 'ECONNABORTED') error.message = 'The API request timed out.';
+    else error.message = 'Unable to reach the API server. Check VITE_API_URL and backend availability.';
     return Promise.reject(error);
   }
 );
