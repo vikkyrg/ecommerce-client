@@ -15,6 +15,7 @@ import ProductCard from '../components/products/ProductCard';
 import ExploreAllProducts from '../components/home/ExploreAllProducts';
 import PromotionalBanner from '../components/home/PromotionalBanner';
 import CustomerReviews from '../components/home/CustomerReviews';
+import BackToTop from '../components/common/BackToTop';
 import ScrollReveal from '../components/common/ScrollReveal';
 import StaggerContainer from '../components/common/StaggerContainer';
 import heroImage from '../assets/hero.png';
@@ -437,6 +438,9 @@ export default function Home() {
           SECTION 7: CUSTOMER REVIEWS & RATINGS (BEFORE FOOTER)
           ========================================================================= */}
       <CustomerReviews />
+
+      {/* Floating Back to Top Button */}
+      <BackToTop />
 
     </div>
   );
