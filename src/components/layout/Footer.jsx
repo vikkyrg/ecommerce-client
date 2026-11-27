@@ -165,7 +165,7 @@ export default function Footer() {
             </h5>
             <ul className="space-y-2 text-xs text-neutral-400">
               <li>
-                <Link to="/contact" className="text-[#ffdf9c] font-semibold hover:underline transition-colors">
+                <Link to="/contact" className="hover:text-[#ffdf9c] transition-colors">
                   Contact Us
                 </Link>
               </li>
@@ -180,18 +180,13 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <Link to="/products" className="hover:text-[#ffdf9c] transition-colors">
+                <Link to="/shipping" className="hover:text-[#ffdf9c] transition-colors">
                   Shipping Information
                 </Link>
               </li>
               <li>
-                <Link to="/products" className="hover:text-[#ffdf9c] transition-colors">
+                <Link to="/returns" className="hover:text-[#ffdf9c] transition-colors">
                   Returns &amp; Refunds
-                </Link>
-              </li>
-              <li>
-                <Link to="/products" className="hover:text-[#ffdf9c] transition-colors">
-                  Privacy Policy
                 </Link>
               </li>
             </ul>
@@ -242,9 +237,9 @@ export default function Footer() {
           <p>© {new Date().getFullYear()} {businessConfig.companyName}. All Rights Reserved. Official Store.</p>
           <div className="flex gap-4 sm:gap-6 text-[11px]">
             <Link to="/contact" className="hover:text-neutral-300 transition-colors">Contact Us</Link>
-            <span className="hover:text-neutral-300 cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-neutral-300 cursor-pointer">Terms of Service</span>
-            <span className="hover:text-neutral-300 cursor-pointer">Shipping &amp; Delivery</span>
+            <Link to="/privacy-policy" className="hover:text-neutral-300 transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-neutral-300 transition-colors">Terms of Service</Link>
+            <Link to="/shipping" className="hover:text-neutral-300 transition-colors">Shipping &amp; Delivery</Link>
           </div>
         </div>
       </div>

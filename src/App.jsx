@@ -99,10 +99,13 @@ export default function App() {
                   <Route path="/about" element={<About />} />
                   <Route path="/faq" element={<FAQ />} />
 
-                  {/* Policies */}
+                  {/* Policies & Support */}
+                  <Route path="/shipping" element={<ShippingPolicy />} />
                   <Route path="/shipping-policy" element={<ShippingPolicy />} />
+                  <Route path="/returns" element={<ReturnPolicy />} />
                   <Route path="/return-policy" element={<ReturnPolicy />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                  <Route path="/terms" element={<TermsConditions />} />
                   <Route path="/terms-and-conditions" element={<TermsConditions />} />
 
                   {/* Admin Portal */}
