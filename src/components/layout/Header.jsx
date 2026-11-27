@@ -57,7 +57,7 @@ export default function Header({ onOpenMobileMenu, onOpenAccountModal }) {
               <img
                 src={logoImg}
                 alt={businessConfig.companyName}
-                className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 object-contain rounded-md transition-transform duration-300 group-hover:scale-105 flex-shrink-0"
+                className="h-9 w-9 sm:h-11 sm:w-11 lg:h-14 lg:w-14 object-contain rounded-md transition-transform duration-300 group-hover:scale-105 flex-shrink-0"
               />
               <div className="flex flex-col justify-center min-w-0">
                 <span className="font-['Manrope'] font-bold text-xs xs:text-sm sm:text-base lg:text-xl tracking-tight text-black leading-tight group-hover:text-amber-900 transition-colors truncate">

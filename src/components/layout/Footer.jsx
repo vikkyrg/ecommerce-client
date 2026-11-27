@@ -77,7 +77,7 @@ export default function Footer() {
               <img
                 src={logoImg}
                 alt={businessConfig.companyName}
-                className="h-9 w-9 object-contain rounded-md"
+                className="h-10 w-10 object-contain rounded-md"
               />
               <span className="font-['Manrope'] font-bold text-base sm:text-lg text-white uppercase tracking-tight">
                 {businessConfig.companyName}

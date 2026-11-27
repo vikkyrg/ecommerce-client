@@ -1,21 +1,32 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, ShieldCheck, CreditCard, Truck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, CheckCircle2, ShieldCheck, CreditCard, Truck, Package, ArrowRight } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
+import { createOrder } from '../../services/api';
 
 export default function CheckoutModal({ isOpen, onClose, summary }) {
-  const { cartItems, clearCart } = useCart();
+  const { cart, cartItems, clearCart } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const activeCart = cart && cart.length > 0 ? cart : cartItems || [];
+  const defaultAddr = user?.addresses?.find(a => a.isDefault) || user?.addresses?.[0];
+
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    paymentMethod: 'upi'
+    name: defaultAddr?.fullName || user?.name || '',
+    email: user?.email || '',
+    phone: defaultAddr?.phone || user?.phone || '',
+    address: defaultAddr ? `${defaultAddr.house || ''}, ${defaultAddr.street || ''}` : '',
+    city: defaultAddr?.city || 'Bangalore',
+    state: defaultAddr?.state || 'Karnataka',
+    pincode: defaultAddr?.pincode || '560001',
+    paymentMethod: 'UPI'
   });
   const [isSuccess, setIsSuccess] = useState(false);
-  const [orderId, setOrderId] = useState('');
+  const [placedOrder, setPlacedOrder] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderError, setOrderError] = useState('');
 
   if (!isOpen) return null;
 
@@ -23,12 +34,51 @@ export default function CheckoutModal({ isOpen, onClose, summary }) {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    const newOrderId = 'NS-' + Math.floor(100000 + Math.random() * 900000);
-    setOrderId(newOrderId);
-    setIsSuccess(true);
-    clearCart();
+    setIsSubmitting(true);
+    setOrderError('');
+
+    try {
+      const orderPayload = {
+        userId: user?._id || user?.id,
+        customerName: formData.name,
+        phone: formData.phone,
+        guestEmail: formData.email,
+        orderItems: activeCart.map(item => ({
+          product: item.id || item._id,
+          name: item.name,
+          image: item.image,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.size
+        })),
+        shippingAddress: {
+          fullName: formData.name,
+          phone: formData.phone,
+          house: formData.address,
+          street: formData.address,
+          city: formData.city,
+          state: formData.state,
+          pincode: formData.pincode,
+          addressType: 'Home'
+        },
+        paymentMethod: formData.paymentMethod.toUpperCase(),
+        itemsPrice: summary ? summary.subtotal : activeCart.reduce((s, i) => s + (i.price * i.quantity), 0),
+        shippingPrice: summary ? summary.shipping : 0,
+        discountAmount: summary ? summary.discount : 0,
+        totalPrice: summary ? summary.total : activeCart.reduce((s, i) => s + (i.price * i.quantity), 0)
+      };
+
+      const result = await createOrder(orderPayload);
+      setPlacedOrder(result);
+      setIsSuccess(true);
+      clearCart();
+    } catch (err) {
+      setOrderError(err.message || 'Failed to place order. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -68,20 +118,31 @@ export default function CheckoutModal({ isOpen, onClose, summary }) {
                 Thank You for Your Order!
               </h4>
               <p className="text-sm text-neutral-600 max-w-md mx-auto">
-                Your order <span className="font-bold text-black">{orderId}</span> has been confirmed. A delivery tracking link and invoice receipt have been sent to <span className="font-semibold text-black">{formData.email || 'your email'}</span>.
+                Your order <span className="font-bold text-black">{placedOrder?.orderNumber || 'NSC-CONFIRMED'}</span> has been placed and saved to your account.
               </p>
 
               <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 max-w-sm mx-auto text-left text-xs space-y-1.5 mt-4">
+                <p><span className="text-neutral-500">Order ID:</span> <span className="font-mono font-bold text-black">{placedOrder?.orderNumber}</span></p>
                 <p><span className="text-neutral-500">Recipient:</span> <span className="font-semibold text-black">{formData.name}</span></p>
                 <p><span className="text-neutral-500">Phone:</span> <span className="font-semibold text-black">{formData.phone}</span></p>
                 <p><span className="text-neutral-500">Address:</span> <span className="font-semibold text-black">{formData.address}, {formData.city}, {formData.state} - {formData.pincode}</span></p>
-                <p><span className="text-neutral-500">Payment:</span> <span className="font-semibold text-black uppercase">{formData.paymentMethod}</span></p>
+                <p><span className="text-neutral-500">Total Paid:</span> <span className="font-bold text-black">₹{placedOrder?.totalPrice?.toLocaleString('en-IN') || (summary ? summary.total : 0)}</span></p>
               </div>
 
-              <div className="pt-4">
+              <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate('/account?tab=orders');
+                  }}
+                  className="w-full sm:w-auto bg-black hover:bg-neutral-800 text-[#ffdf9c] font-semibold text-xs px-6 py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Package className="w-4 h-4" />
+                  <span>View My Orders</span>
+                </button>
                 <button
                   onClick={onClose}
-                  className="bg-black hover:bg-neutral-800 text-[#ffdf9c] font-semibold text-xs px-6 py-3 rounded-lg"
+                  className="w-full sm:w-auto bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-semibold text-xs px-6 py-3 rounded-xl transition-colors cursor-pointer"
                 >
                   Continue Shopping
                 </button>
@@ -89,6 +150,11 @@ export default function CheckoutModal({ isOpen, onClose, summary }) {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
+              {orderError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl">
+                  {orderError}
+                </div>
+              )}
               
               {/* Customer Contact */}
               <div>
@@ -241,9 +307,10 @@ export default function CheckoutModal({ isOpen, onClose, summary }) {
 
                 <button
                   type="submit"
-                  className="w-full sm:w-auto bg-black hover:bg-neutral-800 text-[#ffdf9c] font-semibold text-xs sm:text-sm px-7 py-3 rounded-lg transition-colors cursor-pointer shadow-xs active:scale-[0.98]"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto bg-black hover:bg-neutral-800 text-[#ffdf9c] font-semibold text-xs sm:text-sm px-7 py-3 rounded-lg transition-colors cursor-pointer shadow-xs active:scale-[0.98] disabled:opacity-60"
                 >
-                  Confirm &amp; Place Order
+                  {isSubmitting ? 'Placing Order...' : 'Confirm & Place Order'}
                 </button>
               </div>
 

@@ -24,6 +24,7 @@ import { fetchProductById, fetchProducts } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import ProductCard from '../components/products/ProductCard';
+import { getProductPricing } from '../utils/productPricing';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -86,33 +87,35 @@ export default function ProductDetail() {
 
   const productId = product.id || product._id || product.slug;
   const isWishlisted = isInWishlist(productId);
-  const hasPrice = product.price !== null && product.price !== undefined &&
-    product.price !== '' && Number.isFinite(Number(product.price));
-  const unavailable = product.inStock === false || product.stock === 0;
-  const hasStockConfirmation = product.inStock === true ||
-    (product.stock !== null && product.stock !== undefined && Number.isFinite(Number(product.stock)));
-  const canPurchase = hasPrice && hasStockConfirmation && !unavailable;
+
+  const { originalPrice, effectivePrice, discountPercent, hasPrice } = getProductPricing(product);
+
+  const availableStock = Number.isSafeInteger(product.stock) && product.stock >= 0
+    ? product.stock
+    : null;
+  const unavailable = availableStock === 0;
+  const canPurchase = hasPrice && availableStock !== null && !unavailable;
   const availability = unavailable
     ? 'Out of Stock'
-    : product.inStock === true || Number(product.stock) > 0
-      ? 'In Stock'
-      : 'Availability on request';
+    : availableStock !== null
+      ? `${availableStock} in stock`
+      : 'Stock not listed';
 
   const handleAddToCart = () => {
-    addToCart(product, quantity);
+    addToCart({ ...product, price: effectivePrice }, quantity);
     setAddedNotice(true);
     setTimeout(() => setAddedNotice(false), 2000);
   };
 
   const handleBuyNow = () => {
-    addToCart(product, quantity);
+    addToCart({ ...product, price: effectivePrice }, quantity);
     setIsCartOpen(true);
   };
 
   return (
     <div className="bg-[#f9f9f7] min-h-screen py-4 sm:py-8 lg:py-10">
       <div className="site-container">
-        
+
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center gap-1.5 text-xs text-neutral-500 font-['Inter'] mb-4 sm:mb-6 select-none flex-wrap">
           <Link to="/" className="hover:text-black transition-colors">
@@ -137,7 +140,7 @@ export default function ProductDetail() {
 
         {/* Product Details Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 bg-white rounded-2xl p-4 sm:p-8 lg:p-10 border border-[#e2e3e1] shadow-2xs">
-          
+
           {/* Left Column: Product Image Gallery */}
           <div className="lg:col-span-6 space-y-4">
             <div className="relative aspect-square w-full rounded-2xl bg-neutral-50 border border-neutral-200 p-6 sm:p-8 flex items-center justify-center overflow-hidden">
@@ -154,18 +157,17 @@ export default function ProductDetail() {
               ) : (
                 <Package className="w-16 h-16 text-neutral-300" aria-label="No product image" />
               )}
-              {product.discount > 0 && (
+              {discountPercent > 0 && (
                 <span className="absolute top-3.5 left-3.5 bg-amber-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-md shadow-xs">
-                  {product.discount}% OFF
+                  {discountPercent}% OFF
                 </span>
               )}
               <button
                 onClick={() => toggleWishlist(product)}
-                className={`absolute top-3.5 right-3.5 p-2.5 rounded-full border shadow-xs transition-colors cursor-pointer ${
-                  isWishlisted
-                    ? 'bg-rose-50 text-rose-600 border-rose-200'
-                    : 'bg-white text-neutral-500 border-neutral-200 hover:text-black'
-                }`}
+                className={`absolute top-3.5 right-3.5 p-2.5 rounded-full border shadow-xs transition-colors cursor-pointer ${isWishlisted
+                  ? 'bg-rose-50 text-rose-600 border-rose-200'
+                  : 'bg-white text-neutral-500 border-neutral-200 hover:text-black'
+                  }`}
                 title="Wishlist"
                 aria-label="Save to Wishlist"
               >
@@ -196,7 +198,7 @@ export default function ProductDetail() {
           {/* Right Column: Product Information & Purchase CTAs */}
           <div className="lg:col-span-6 flex flex-col justify-between space-y-5">
             <div className="space-y-3 sm:space-y-4">
-              
+
               {/* Brand, Stock, SKU */}
               <div className="flex items-center gap-2 text-xs text-neutral-500 font-medium flex-wrap">
                 {product.brand && (
@@ -205,7 +207,7 @@ export default function ProductDetail() {
                   </span>
                 )}
                 {product.brand && <span>•</span>}
-                <span className={product.inStock === true || Number(product.stock) > 0 ? 'text-emerald-700 font-semibold' : 'text-neutral-500'}>
+                <span className={availableStock > 0 ? 'text-emerald-700 font-semibold' : 'text-neutral-500'}>
                   {availability}
                 </span>
                 {product.sku && (
@@ -237,27 +239,27 @@ export default function ProductDetail() {
 
               {/* Price & Tax details */}
               <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200 space-y-1">
-                <div className="flex items-baseline gap-3">
+                <div className="flex items-baseline gap-3 flex-wrap">
                   {hasPrice ? (
                     <span className="font-['Manrope'] font-extrabold text-2xl sm:text-3xl text-black">
-                      ₹{Number(product.price).toLocaleString('en-IN')}
+                      ₹{Number(effectivePrice).toLocaleString('en-IN')}
                     </span>
                   ) : (
-                    <span className="font-['Manrope'] font-bold text-xl text-neutral-800">Price on request</span>
+                    <span className="font-['Manrope'] font-extrabold text-2xl sm:text-3xl text-black">Price unavailable</span>
                   )}
-                  {product.mrp != null && hasPrice && product.mrp > product.price && (
+                  {hasPrice && originalPrice != null && originalPrice > effectivePrice && (
                     <span className="text-sm sm:text-base text-neutral-400 line-through">
-                      ₹{Number(product.mrp).toLocaleString('en-IN')}
+                      ₹{Number(originalPrice).toLocaleString('en-IN')}
                     </span>
                   )}
-                  {product.discount > 0 && product.mrp != null && hasPrice && (
+                  {hasPrice && originalPrice != null && originalPrice > effectivePrice && (
                     <span className="text-xs font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded">
-                      Save ₹{(product.mrp - product.price).toLocaleString('en-IN')}
+                      Save ₹{(originalPrice - effectivePrice).toLocaleString('en-IN')}{discountPercent ? ` (${discountPercent}% OFF)` : ''}
                     </span>
                   )}
                 </div>
                 <p className="text-[11px] text-neutral-500 font-['Inter']">
-                  {hasPrice ? 'Price inclusive of all taxes. Free shipping on orders over ₹1,999.' : 'Contact us for current pricing and availability.'}
+                  Price inclusive of all taxes. Free shipping on orders over ₹1,999.
                 </p>
               </div>
 
@@ -274,10 +276,25 @@ export default function ProductDetail() {
               )}
 
               {/* Short Description */}
-              {product.description && (
+              {product.shortDescription && (
                 <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-['Inter']">
-                  {product.description}
+                  {product.shortDescription}
                 </p>
+              )}
+
+              {/* Product Features Checklist (Highlights) */}
+              {Array.isArray(product.features) && product.features.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-700 block">Key Features</span>
+                  <ul className="space-y-1">
+                    {product.features.map((feat, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-neutral-700">
+                        <Check className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
 
               {/* Purchase controls are shown only when the catalog has a confirmed price. */}
@@ -289,6 +306,7 @@ export default function ProductDetail() {
                       <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden bg-white">
                         <button
                           onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                          disabled={quantity <= 1}
                           className="p-2 hover:bg-neutral-100 transition-colors cursor-pointer text-neutral-600"
                           aria-label="Decrease quantity"
                         >
@@ -296,8 +314,9 @@ export default function ProductDetail() {
                         </button>
                         <span className="w-10 text-center font-bold text-xs text-black">{quantity}</span>
                         <button
-                          onClick={() => setQuantity(q => q + 1)}
-                          className="p-2 hover:bg-neutral-100 transition-colors cursor-pointer text-neutral-600"
+                          onClick={() => setQuantity(q => Math.min(availableStock, q + 1))}
+                          disabled={quantity >= availableStock}
+                          className="p-2 hover:bg-neutral-100 transition-colors cursor-pointer text-neutral-600 disabled:opacity-40 disabled:cursor-not-allowed"
                           aria-label="Increase quantity"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -333,12 +352,12 @@ export default function ProductDetail() {
                     </div>
                   </>
                 ) : (
-                  <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                  <p className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-600">
                     {unavailable
-                      ? 'This product is currently unavailable.'
+                      ? 'This product is currently out of stock.'
                       : !hasPrice
-                        ? 'Price and stock are not listed. Contact us for a quote.'
-                        : 'Stock availability is not confirmed. Contact us before ordering.'}
+                        ? 'A current price is unavailable for this product.'
+                        : 'Stock availability has not been confirmed for this product.'}
                   </p>
                 )}
               </div>
@@ -367,25 +386,36 @@ export default function ProductDetail() {
           <div className="flex items-center gap-4 sm:gap-6 border-b border-neutral-200 pb-3 overflow-x-auto text-xs sm:text-sm font-semibold select-none">
             <button
               onClick={() => setActiveTab('description')}
-              className={`pb-2 border-b-2 whitespace-nowrap cursor-pointer transition-colors ${
-                activeTab === 'description' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'
-              }`}
+              className={`pb-2 border-b-2 whitespace-nowrap cursor-pointer transition-colors ${activeTab === 'description' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'
+                }`}
             >
-              Description &amp; Applications
+              Full Description
+            </button>
+            <button
+              onClick={() => setActiveTab('applications')}
+              className={`pb-2 border-b-2 whitespace-nowrap cursor-pointer transition-colors ${activeTab === 'applications' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'
+                }`}
+            >
+              Applications &amp; Uses
+            </button>
+            <button
+              onClick={() => setActiveTab('features')}
+              className={`pb-2 border-b-2 whitespace-nowrap cursor-pointer transition-colors ${activeTab === 'features' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'
+                }`}
+            >
+              Product Features
             </button>
             <button
               onClick={() => setActiveTab('specs')}
-              className={`pb-2 border-b-2 whitespace-nowrap cursor-pointer transition-colors ${
-                activeTab === 'specs' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'
-              }`}
+              className={`pb-2 border-b-2 whitespace-nowrap cursor-pointer transition-colors ${activeTab === 'specs' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'
+                }`}
             >
               Technical Specifications
             </button>
             <button
               onClick={() => setActiveTab('shipping')}
-              className={`pb-2 border-b-2 whitespace-nowrap cursor-pointer transition-colors ${
-                activeTab === 'shipping' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'
-              }`}
+              className={`pb-2 border-b-2 whitespace-nowrap cursor-pointer transition-colors ${activeTab === 'shipping' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'
+                }`}
             >
               Shipping &amp; Returns
             </button>
@@ -394,7 +424,28 @@ export default function ProductDetail() {
           <div className="pt-5 text-xs sm:text-sm text-neutral-600 leading-relaxed font-['Inter']">
             {activeTab === 'description' && (
               <div className="space-y-3">
-                <p>{product.description || 'No product description is available.'}</p>
+                <p className="whitespace-pre-line">{product.description || product.shortDescription || 'No detailed product description is available.'}</p>
+              </div>
+            )}
+            {activeTab === 'applications' && (
+              <div className="space-y-3">
+                <p className="whitespace-pre-line">{product.applications || 'No application details specified.'}</p>
+              </div>
+            )}
+            {activeTab === 'features' && (
+              <div className="space-y-2">
+                {Array.isArray(product.features) && product.features.length > 0 ? (
+                  <ul className="space-y-1.5">
+                    {product.features.map((feat, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>No specific features listed for this product.</p>
+                )}
               </div>
             )}
             {activeTab === 'specs' && (

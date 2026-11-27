@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import ProductCard from '../products/ProductCard';
+import { limitExploreProducts } from '../../utils/exploreProductSelection';
 
 export default function ExploreAllProducts({ products = [], categories = [] }) {
   // selectedCategory stores the selected category slug or 'All'
@@ -89,7 +90,7 @@ export default function ExploreAllProducts({ products = [], categories = [] }) {
       result.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
 
-    return result;
+    return limitExploreProducts(result, tabCategories.slice(1), selectedCategory, matchesCategory);
   }, [safeProducts, selectedCategory, searchQuery, sortBy, tabCategories]);
 
   return (

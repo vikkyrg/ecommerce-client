@@ -15,10 +15,13 @@ import {
   LogOut,
   ArrowRight,
   ShieldCheck,
-  HelpCircle
+  Clock,
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { fetchMyOrders } from '../../services/api';
 import businessConfig from '../../config/businessConfig';
 
 export default function AccountModal({ isOpen, onClose, initialTab = 'signin' }) {
@@ -27,6 +30,10 @@ export default function AccountModal({ isOpen, onClose, initialTab = 'signin' })
 
   // Tab State: 'signin' | 'register' | 'forgot'
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Quick stats state when authenticated
+  const [quickOrders, setQuickOrders] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   // Form states
   const [signInIdentifier, setSignInIdentifier] = useState('');
@@ -53,7 +60,7 @@ export default function AccountModal({ isOpen, onClose, initialTab = 'signin' })
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Sync initial tab when modal opens
+  // Sync initial tab when modal opens & load quick stats if authenticated
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
@@ -61,8 +68,21 @@ export default function AccountModal({ isOpen, onClose, initialTab = 'signin' })
       setServerError('');
       setSuccessMessage('');
       setForgotSubmitted(false);
+
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('ns_stone_token') : null;
+      if (isAuthenticated && user && token) {
+        setLoadingStats(true);
+        fetchMyOrders()
+          .then(data => {
+            if (Array.isArray(data)) setQuickOrders(data);
+          })
+          .catch(() => {})
+          .finally(() => setLoadingStats(false));
+      } else {
+        setQuickOrders([]);
+      }
     }
-  }, [isOpen, initialTab]);
+  }, [isOpen, initialTab, isAuthenticated, user]);
 
   if (!isOpen) return null;
 
@@ -276,21 +296,46 @@ export default function AccountModal({ isOpen, onClose, initialTab = 'signin' })
           {isAuthenticated && user ? (
             /* Logged In View */
             <div className="space-y-4">
-              <div className="flex items-center gap-3.5 p-3.5 bg-neutral-50 rounded-xl border border-neutral-200/80">
-                <div className="w-11 h-11 rounded-full bg-black text-[#ffdf9c] border border-amber-400/30 flex items-center justify-center font-bold text-base shadow-xs">
-                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              {/* Customer Profile Card */}
+              <div className="p-3.5 bg-neutral-50 rounded-xl border border-neutral-200/80">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-full bg-black text-[#ffdf9c] border border-amber-400/40 flex items-center justify-center font-bold text-base shadow-xs flex-shrink-0">
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h4 className="font-['Manrope'] font-bold text-sm text-neutral-900 truncate">
+                        {user.name || 'Valued Customer'}
+                      </h4>
+                      <span className="text-[10px] bg-amber-100 text-amber-900 font-semibold px-1.5 py-0.2 rounded border border-amber-300/60">
+                        Verified
+                      </span>
+                    </div>
+                    <p className="text-xs text-neutral-500 truncate">{user.email}</p>
+                    {user.phone && <p className="text-[11px] text-neutral-400">+91 {user.phone.replace(/^91/, '')}</p>}
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <h4 className="font-['Manrope'] font-bold text-sm text-neutral-900 truncate">
-                      {user.name || 'Valued Customer'}
-                    </h4>
-                    <span className="text-[10px] bg-amber-100 text-amber-900 font-semibold px-1.5 py-0.2 rounded">
-                      Verified
+
+                {/* Dynamic Quick Stats Bar */}
+                <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-neutral-200/60 text-center">
+                  <div className="bg-white p-2 rounded-lg border border-neutral-200/60">
+                    <span className="text-[10px] uppercase font-bold text-neutral-400 block">Orders</span>
+                    <span className="text-xs font-bold text-black font-['Manrope']">
+                      {loadingStats ? '…' : quickOrders.length}
                     </span>
                   </div>
-                  <p className="text-xs text-neutral-500 truncate">{user.email}</p>
-                  {user.phone && <p className="text-[11px] text-neutral-400">{user.phone}</p>}
+                  <div className="bg-white p-2 rounded-lg border border-neutral-200/60">
+                    <span className="text-[10px] uppercase font-bold text-amber-600 block">Active</span>
+                    <span className="text-xs font-bold text-black font-['Manrope']">
+                      {loadingStats ? '…' : quickOrders.filter(o => ['Order Placed', 'Confirmed', 'Processing', 'Shipped', 'Out for Delivery'].includes(o.orderStatus)).length}
+                    </span>
+                  </div>
+                  <div className="bg-white p-2 rounded-lg border border-neutral-200/60">
+                    <span className="text-[10px] uppercase font-bold text-neutral-400 block">Saved</span>
+                    <span className="text-xs font-bold text-black font-['Manrope']">
+                      {user?.addresses?.length || 0} addr
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -321,7 +366,14 @@ export default function AccountModal({ isOpen, onClose, initialTab = 'signin' })
                     <Package className="w-4 h-4 text-neutral-600 group-hover:text-black transition-colors" />
                     My Orders &amp; Tracking
                   </span>
-                  <ArrowRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-black transition-colors" />
+                  <div className="flex items-center gap-1.5">
+                    {quickOrders.length > 0 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-200 font-bold text-black">
+                        {quickOrders.length}
+                      </span>
+                    )}
+                    <ArrowRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-black transition-colors" />
+                  </div>
                 </button>
 
                 <button
@@ -370,7 +422,7 @@ export default function AccountModal({ isOpen, onClose, initialTab = 'signin' })
               <div className="pt-3 border-t border-neutral-100">
                 <button
                   onClick={logout}
-                  className="w-full bg-neutral-100 text-neutral-700 hover:text-black hover:bg-neutral-200 font-semibold text-xs py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-neutral-100 text-neutral-700 hover:text-rose-600 hover:bg-rose-50 font-semibold text-xs py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   Sign Out

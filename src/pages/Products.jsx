@@ -13,7 +13,7 @@ import {
   Search,
   ArrowUpDown
 } from 'lucide-react';
-import { fetchProducts, fetchCategories, fetchBrands } from '../services/api';
+import { fetchProducts, fetchProductsByCategory, fetchCategories, fetchBrands } from '../services/api';
 import ProductCard from '../components/products/ProductCard';
 import StaggerContainer from '../components/common/StaggerContainer';
 import ScrollReveal from '../components/common/ScrollReveal';
@@ -107,15 +107,17 @@ export default function Products() {
         const params = { limit: 500 };
         const isAllSelected = !categoryParam || categoryParam === 'All Categories' || categoryParam === 'All Products' || categoryParam === 'All';
         
-        if (!isAllSelected) {
-          params.category = activeCategoryObj?.slug || categoryParam;
-        }
+        const selectedCategory = !isAllSelected
+          ? activeCategoryObj?.slug || categoryParam
+          : null;
         if (brandParam && brandParam !== 'All Brands') params.brand = brandParam;
         if (searchParam) params.search = searchParam;
         if (sortParam) params.sort = sortParam;
         if (inStockParam) params.inStock = 'true';
 
-        const data = await fetchProducts(params);
+        const data = selectedCategory
+          ? await fetchProductsByCategory(selectedCategory, params)
+          : await fetchProducts(params);
         if (!isCancelled) {
           setProducts(data.products || []);
         }

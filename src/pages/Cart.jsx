@@ -24,8 +24,11 @@ export default function Cart() {
     cartCount,
     couponCode,
     couponDiscount,
+    cartStockError,
     applyCoupon,
-    removeCoupon
+    removeCoupon,
+    cartPricingLoading,
+    cartPricingError
   } = useCart();
 
   const [inputCoupon, setInputCoupon] = React.useState('');
@@ -117,7 +120,7 @@ export default function Cart() {
                       </Link>
                       <div className="flex items-center gap-2 mt-1 text-xs text-neutral-500">
                         <span className="font-bold text-black">
-                          {item.price == null ? 'Price on request' : `₹${Number(item.price).toLocaleString('en-IN')}`}
+                          {item.price == null ? 'Price unavailable' : `₹${Number(item.price).toLocaleString('en-IN')}`}
                         </span>
                         {item.size && <span>• {item.size}</span>}
                       </div>
@@ -137,7 +140,8 @@ export default function Cart() {
                       <span className="w-8 sm:w-9 text-center text-xs font-bold text-black">{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="p-1.5 sm:p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 cursor-pointer"
+                        disabled={!Number.isSafeInteger(item.stock) || item.quantity >= item.stock}
+                        className="p-1.5 sm:p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                         aria-label="Increase quantity"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -146,7 +150,7 @@ export default function Cart() {
 
                     <div className="text-right flex-shrink-0">
                       <span className="font-['Manrope'] font-bold text-sm sm:text-base text-black block">
-                        {item.price == null ? 'Quote required' : `₹${(Number(item.price) * item.quantity).toLocaleString('en-IN')}`}
+                        {item.price == null ? 'Price unavailable' : `₹${(Number(item.price) * item.quantity).toLocaleString('en-IN')}`}
                       </span>
                     </div>
 
@@ -265,14 +269,29 @@ export default function Cart() {
 
             {/* Checkout Action */}
             <div className="pt-2">
+              {cartPricingLoading && (
+                <p className="mb-3 text-xs text-neutral-700 bg-neutral-50 border border-neutral-200 rounded-xl p-3">
+                  Refreshing current product prices…
+                </p>
+              )}
+              {cartPricingError && (
+                <p className="mb-3 text-xs text-rose-900 bg-rose-50 border border-rose-200 rounded-xl p-3">
+                  {cartPricingError}
+                </p>
+              )}
               {hasUnpricedItems && (
                 <p className="mb-3 text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-xl p-3">
-                  Remove items with unconfirmed pricing before checkout, or contact us for a quote.
+                  Remove products without a current price before checkout.
+                </p>
+              )}
+              {cartStockError && (
+                <p role="alert" className="mb-3 text-xs text-rose-900 bg-rose-50 border border-rose-200 rounded-xl p-3">
+                  {cartStockError}
                 </p>
               )}
               <button
                 onClick={() => navigate('/checkout')}
-                disabled={hasUnpricedItems}
+                disabled={hasUnpricedItems || Boolean(cartStockError)}
                 className="w-full bg-black hover:bg-neutral-900 text-[#ffdf9c] font-bold text-xs sm:text-sm py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span>Proceed to Checkout</span>

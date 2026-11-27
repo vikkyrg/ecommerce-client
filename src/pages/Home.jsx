@@ -12,9 +12,12 @@ import { fetchCategories, fetchProducts, fetchFeaturedProducts } from '../servic
 import CategoryCard from '../components/home/CategoryCard';
 import ProductCard from '../components/products/ProductCard';
 import ExploreAllProducts from '../components/home/ExploreAllProducts';
+import PromotionalBanner from '../components/home/PromotionalBanner';
+import CustomerReviews from '../components/home/CustomerReviews';
 import ScrollReveal from '../components/common/ScrollReveal';
 import StaggerContainer from '../components/common/StaggerContainer';
 import heroImage from '../assets/hero.png';
+import mobileHeroImage from '../assets/mobile hero.png';
 
 export default function Home() {
   const [categories, setCategories] = useState([]);
@@ -75,27 +78,37 @@ export default function Home() {
               <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 to-transparent pointer-events-none" />
             </div>
 
-            {/* Mobile Hero Content Layout (< 768px): Clean stack */}
-            <div className="md:hidden flex flex-col">
-              {/* Top Text Section */}
-              <div className="p-5 xs:p-6 bg-[#0d0f12] text-white space-y-3.5 z-10">
-                <span className="inline-flex items-center gap-1.5 bg-[#171717] text-[#ffdf9c] border border-neutral-700/80 px-3 py-1 rounded-full font-['Inter'] text-[10px] font-bold tracking-widest uppercase shadow-xs">
+            {/* Mobile Hero Content Layout (< 768px): Vertical banner with text overlay in upper area */}
+            <div
+              className="md:hidden relative w-full flex flex-col justify-between overflow-hidden bg-cover bg-bottom bg-no-repeat rounded-2xl"
+              style={{
+                backgroundImage: `url(${mobileHeroImage})`,
+                minHeight: '520px',
+                aspectRatio: '1086 / 1448'
+              }}
+            >
+              {/* Subtle gradient in top area for crystal clear text readability over upper dark marble */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/45 to-transparent pointer-events-none" />
+
+              {/* Upper Text Content Section */}
+              <div className="relative z-10 p-5 xs:p-6 text-white space-y-3 pt-6 xs:pt-7">
+                <span className="inline-flex items-center gap-1.5 bg-[#171717]/90 text-[#ffdf9c] border border-neutral-700/80 px-3 py-1 rounded-full font-['Inter'] text-[10px] font-bold tracking-widest uppercase shadow-xs backdrop-blur-xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#ffdf9c] animate-pulse" />
                   PREMIUM STONE CARE PRODUCTS
                 </span>
 
-                <h1 className="font-['Manrope'] font-bold text-2xl xs:text-3xl text-white tracking-tight leading-[1.18]">
+                <h1 className="font-['Manrope'] font-bold text-[22px] xs:text-2xl text-white tracking-tight leading-[1.2]">
                   Premium Stone Care &amp; Surface Solutions
                 </h1>
 
-                <p className="font-['Inter'] text-xs text-neutral-300 leading-relaxed">
-                  Explore marble and granite polishing materials, tile adhesives, crystal powders, and diamond accessories from authentic brands.
+                <p className="font-['Inter'] text-xs text-neutral-300 leading-relaxed max-w-sm">
+                  Explore premium marble and granite polishing materials, adhesives, sealers, cleaners and professional tools from trusted brands.
                 </p>
 
-                <div className="flex flex-col xs:flex-row gap-2.5 pt-1">
+                <div className="flex flex-col xs:flex-row gap-2.5 pt-1.5">
                   <a
                     href="#all-products-section"
-                    className="w-full xs:w-auto text-center bg-[#ffdf9c] text-black hover:bg-amber-400 font-['Inter'] font-bold text-xs px-5 py-3 rounded-xl inline-flex items-center justify-center gap-2 shadow-sm active:scale-98"
+                    className="w-full xs:w-auto text-center bg-black hover:bg-neutral-900 text-[#ffdf9c] border border-neutral-700 font-['Inter'] font-semibold text-xs px-5 py-2.5 rounded-xl inline-flex items-center justify-center gap-2 shadow-sm active:scale-98"
                   >
                     <span>Shop All Products</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -103,22 +116,16 @@ export default function Home() {
 
                   <a
                     href="#shop-by-category-section"
-                    className="w-full xs:w-auto text-center bg-white/10 hover:bg-white/20 text-white border border-white/20 font-['Inter'] font-semibold text-xs px-4 py-3 rounded-xl transition-colors"
+                    className="w-full xs:w-auto text-center bg-white/10 hover:bg-white/20 text-white border border-white/20 font-['Inter'] font-medium text-xs px-4 py-2.5 rounded-xl backdrop-blur-xs transition-colors"
                   >
                     Explore Categories
                   </a>
                 </div>
               </div>
 
-              {/* Mobile Hero Product Showcase Image Container */}
-              <div className="relative w-full h-56 xs:h-64 bg-neutral-900 overflow-hidden border-t border-neutral-800">
-                <img
-                  src={heroImage}
-                  alt="NS Stone Chemicals Product Lineup"
-                  className="w-full h-full object-cover object-center"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-                <span className="absolute bottom-2.5 right-3 text-[10px] font-mono font-semibold text-neutral-300 bg-black/60 px-2 py-0.5 rounded backdrop-blur-xs">
+              {/* Spacer so bottom product arrangement is completely clear and unoccluded */}
+              <div className="relative z-10 p-3 flex justify-end">
+                <span className="text-[10px] font-mono font-semibold text-neutral-300 bg-black/60 px-2 py-0.5 rounded backdrop-blur-xs">
                   Official Direct Store
                 </span>
               </div>
@@ -280,15 +287,17 @@ export default function Home() {
             </div>
           </ScrollReveal>
 
-          {/* Dynamic 6 Master Categories Grid: 2 cols on mobile, 3 on tablet, 3 to 6 on desktop */}
-          <StaggerContainer
-            staggerDelay={80}
-            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-3.5 sm:gap-5"
-          >
-            {categories.map(cat => (
-              <CategoryCard key={cat.id || cat.slug} category={cat} />
-            ))}
-          </StaggerContainer>
+          {/* Centered 3-Column Category Grid: exactly 3 per row on Mobile, Tablet & Desktop (2 rows = 6 items) */}
+          <div className="max-w-4xl mx-auto">
+            <StaggerContainer
+              staggerDelay={50}
+              className="grid grid-cols-3 gap-2.5 sm:gap-6 md:gap-8 justify-center items-start"
+            >
+              {categories.slice(0, 6).map(cat => (
+                <CategoryCard key={cat.id || cat.slug || cat._id} category={cat} />
+              ))}
+            </StaggerContainer>
+          </div>
         </div>
       </section>
 
@@ -409,6 +418,16 @@ export default function Home() {
           SECTION 5: EXPLORE ALL PRODUCTS (ON HOMEPAGE)
           ========================================================================= */}
       <ExploreAllProducts products={allProducts} categories={categories} />
+
+      {/* =========================================================================
+          SECTION 6: NEW PROMOTIONAL BANNER (BEFORE CUSTOMER REVIEWS)
+          ========================================================================= */}
+      <PromotionalBanner />
+
+      {/* =========================================================================
+          SECTION 7: CUSTOMER REVIEWS & RATINGS (BEFORE FOOTER)
+          ========================================================================= */}
+      <CustomerReviews />
 
     </div>
   );

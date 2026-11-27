@@ -19,6 +19,9 @@ export const submitEnquiryApi = enquiryData =>
 export const fetchProducts = (params = {}) =>
   api.get('/products', { params }).then(responseData);
 
+export const fetchProductsByCategory = (category, params = {}) =>
+  api.get(`/products/category/${encodeURIComponent(category)}`, { params }).then(responseData);
+
 export const fetchFeaturedProducts = () =>
   api.get('/products/featured').then(responseData);
 
@@ -39,6 +42,9 @@ export const fetchOrderById = id =>
 
 export const fetchMyOrders = () =>
   api.get('/orders/myorders').then(responseData);
+
+export const cancelOrderApi = (id, reason) =>
+  api.put(`/orders/${encodeURIComponent(id)}/cancel`, { reason }).then(responseData);
 
 export const trackOrderApi = (orderNumber, phone) =>
   api.post('/orders/track', { orderNumber, phone }).then(responseData);

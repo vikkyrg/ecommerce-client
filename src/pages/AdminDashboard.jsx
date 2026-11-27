@@ -37,6 +37,8 @@ export default function AdminDashboard() {
     sku: '',
     category: '',
     price: '',
+    discountPrice: '',
+    discountPercentage: '',
     mrp: '',
     stock: '',
     size: '',
@@ -77,11 +79,39 @@ export default function AdminDashboard() {
     setFormMsg('');
 
     try {
+      if (!newProduct.price || !Number.isFinite(Number(newProduct.price)) || Number(newProduct.price) <= 0) {
+        setFormMsg('Product Price is required and must be a positive number');
+        return;
+      }
+      if (newProduct.discountPrice !== '' && newProduct.discountPrice !== null && newProduct.discountPrice !== undefined) {
+        if (!Number.isFinite(Number(newProduct.discountPrice)) || Number(newProduct.discountPrice) < 0) {
+          setFormMsg('Discount Price must be a valid non-negative number');
+          return;
+        }
+        if (Number(newProduct.discountPrice) > Number(newProduct.price)) {
+          setFormMsg('Discount Price cannot be greater than Product Price');
+          return;
+        }
+      }
+
+      const calculatedDiscount = (newProduct.price && Number(newProduct.discountPrice) > 0 && Number(newProduct.price) > 0 && Number(newProduct.discountPrice) < Number(newProduct.price))
+        ? Math.round(((Number(newProduct.price) - Number(newProduct.discountPrice)) / Number(newProduct.price)) * 100)
+        : null;
+
       const { data } = await api.post('/products', {
           ...newProduct,
           image: '',
-          price: newProduct.price === '' ? null : Number(newProduct.price),
-          mrp: newProduct.mrp === '' ? null : Number(newProduct.mrp),
+          originalPrice: Number(newProduct.price),
+          price: Number(newProduct.price),
+          discountPrice: newProduct.discountPrice === '' ||
+            newProduct.discountPrice === null ||
+            newProduct.discountPrice === undefined ||
+            Number(newProduct.discountPrice) <= 0 ||
+            Number(newProduct.discountPrice) === Number(newProduct.price)
+            ? null
+            : Number(newProduct.discountPrice),
+          discountPercentage: calculatedDiscount,
+          mrp: newProduct.mrp === '' ? (newProduct.discountPrice ? Number(newProduct.price) : null) : Number(newProduct.mrp),
           stock: newProduct.stock === '' ? null : Number(newProduct.stock)
       });
 
@@ -93,6 +123,8 @@ export default function AdminDashboard() {
         sku: '',
         category: categories[0]?.slug || '',
         price: '',
+        discountPrice: '',
+        discountPercentage: '',
         mrp: '',
         stock: '',
         size: '',
@@ -132,7 +164,7 @@ export default function AdminDashboard() {
   return (
     <div className="bg-[#f9f9f7] min-h-screen py-8 sm:py-12">
       <div className="site-container">
-        
+
         {/* Admin Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 mb-8 border-b border-neutral-200 gap-4">
           <div>
@@ -184,17 +216,15 @@ export default function AdminDashboard() {
         <div className="flex gap-2 border-b border-neutral-200 mb-6">
           <button
             onClick={() => setActiveTab('products')}
-            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 cursor-pointer transition-colors ${
-              activeTab === 'products' ? 'border-black text-black' : 'border-transparent text-neutral-500 hover:text-black'
-            }`}
+            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 cursor-pointer transition-colors ${activeTab === 'products' ? 'border-black text-black' : 'border-transparent text-neutral-500 hover:text-black'
+              }`}
           >
             Products ({products.length})
           </button>
           <button
             onClick={() => setActiveTab('orders')}
-            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 cursor-pointer transition-colors ${
-              activeTab === 'orders' ? 'border-black text-black' : 'border-transparent text-neutral-500 hover:text-black'
-            }`}
+            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 cursor-pointer transition-colors ${activeTab === 'orders' ? 'border-black text-black' : 'border-transparent text-neutral-500 hover:text-black'
+              }`}
           >
             Customer Orders ({orders.length})
           </button>
@@ -232,7 +262,25 @@ export default function AdminDashboard() {
                     </td>
                     <td className="p-4 font-mono font-semibold text-neutral-700">{p.sku || '—'}</td>
                     <td className="p-4 text-neutral-600 line-clamp-1 max-w-[160px]">{p.categoryName || p.category || '—'}</td>
-                    <td className="p-4 font-bold text-black">{p.price == null ? '—' : `₹${p.price.toLocaleString('en-IN')}`}</td>
+                    <td className="p-4 font-bold text-black">
+                      {p.discountPrice != null &&
+                      Number(p.discountPrice) > 0 &&
+                      Number(p.discountPrice) < Number(p.originalPrice ?? p.price) ? (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span>₹{Number(p.discountPrice).toLocaleString('en-IN')}</span>
+                          <span className="text-[10px] text-neutral-400 line-through">
+                            ₹{Number(p.originalPrice ?? p.price).toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-[10px] text-emerald-700">
+                            {Math.round(((Number(p.originalPrice ?? p.price) - Number(p.discountPrice)) / Number(p.originalPrice ?? p.price)) * 100)}% OFF
+                          </span>
+                        </div>
+                      ) : (
+                        (p.originalPrice ?? p.price) == null
+                          ? '—'
+                          : `₹${Number(p.originalPrice ?? p.price).toLocaleString('en-IN')}`
+                      )}
+                    </td>
                     <td className="p-4">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${p.isActive === false ? 'bg-rose-50 text-rose-800' : 'bg-emerald-50 text-emerald-800'}`}>
                         {p.isActive === false ? 'Inactive' : 'Active'} · {p.stock == null ? 'Stock unknown' : `${p.stock} in stock`}
@@ -382,14 +430,54 @@ export default function AdminDashboard() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold mb-1">Selling Price (₹)</label>
+                    <label className="block font-semibold mb-1">Product Price (₹) *</label>
                     <input
                       type="number"
                       min="0"
+                      step="0.01"
+                      required
                       value={newProduct.price}
-                      onChange={e => setNewProduct({ ...newProduct, price: e.target.value })}
-                      placeholder="Optional"
+                      onChange={e => {
+                        const val = e.target.value;
+                        const disc = newProduct.discountPrice;
+                        let pct = '';
+                        if (val && disc && Number(val) > 0 && Number(disc) < Number(val)) {
+                          pct = Math.round(((Number(val) - Number(disc)) / Number(val)) * 100);
+                        }
+                        setNewProduct({ ...newProduct, price: val, discountPercentage: pct });
+                      }}
+                      placeholder="2500"
                       className="w-full bg-[#f9f9f7] p-2.5 rounded-lg border border-neutral-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">Discount Price (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={newProduct.discountPrice}
+                      onChange={e => {
+                        const val = e.target.value;
+                        const reg = newProduct.price;
+                        let pct = '';
+                        if (reg && val && Number(reg) > 0 && Number(val) < Number(reg)) {
+                          pct = Math.round(((Number(reg) - Number(val)) / Number(reg)) * 100);
+                        }
+                        setNewProduct({ ...newProduct, discountPrice: val, discountPercentage: pct });
+                      }}
+                      placeholder="2000"
+                      className="w-full bg-[#f9f9f7] p-2.5 rounded-lg border border-neutral-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">Discount %</label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={newProduct.discountPercentage ? `${newProduct.discountPercentage}%` : ''}
+                      placeholder="Auto-calculated"
+                      className="w-full bg-neutral-100 p-2.5 rounded-lg border border-neutral-300 text-neutral-500 cursor-not-allowed select-none"
                     />
                   </div>
                   <div>

@@ -136,8 +136,16 @@ export default function OrderSuccess() {
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
+            to="/account?tab=orders"
+            className="w-full sm:w-auto bg-black text-[#ffdf9c] font-semibold text-xs sm:text-sm px-6 py-3.5 rounded-xl hover:bg-neutral-800 transition-colors inline-flex items-center justify-center gap-2 shadow-xs"
+          >
+            <Package className="w-4 h-4" />
+            <span>View My Orders</span>
+          </Link>
+
+          <Link
             to="/products"
-            className="w-full sm:w-auto bg-black text-[#ffdf9c] font-semibold text-xs sm:text-sm px-6 py-3.5 rounded-xl hover:bg-neutral-800 transition-colors inline-flex items-center justify-center gap-2"
+            className="w-full sm:w-auto bg-white text-neutral-800 border border-neutral-300 font-semibold text-xs sm:text-sm px-6 py-3.5 rounded-xl hover:bg-neutral-50 transition-colors inline-flex items-center justify-center gap-2"
           >
             <span>Continue Shopping</span>
             <ArrowRight className="w-4 h-4" />
@@ -145,10 +153,10 @@ export default function OrderSuccess() {
 
           <Link
             to="/track-order"
-            className="w-full sm:w-auto bg-white text-neutral-800 border border-neutral-300 font-semibold text-xs sm:text-sm px-6 py-3.5 rounded-xl hover:bg-neutral-50 transition-colors inline-flex items-center justify-center gap-2"
+            className="w-full sm:w-auto bg-neutral-100 text-neutral-700 font-semibold text-xs sm:text-sm px-6 py-3.5 rounded-xl hover:bg-neutral-200 transition-colors inline-flex items-center justify-center gap-2"
           >
             <Truck className="w-4 h-4 text-neutral-600" />
-            <span>Track This Order</span>
+            <span>Live Tracking</span>
           </Link>
         </div>
 

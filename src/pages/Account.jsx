@@ -34,7 +34,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
-import { fetchMyOrders } from '../services/api';
+import { fetchMyOrders, cancelOrderApi } from '../services/api';
 import businessConfig from '../config/businessConfig';
 import ProductCard from '../components/products/ProductCard';
 
@@ -55,6 +55,13 @@ export default function Account() {
   const [ordersError, setOrdersError] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
   const [orderFilter, setOrderFilter] = useState('All');
+
+  // Customer Cancellation State
+  const [cancelModalOrder, setCancelModalOrder] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState('');
+  const [cancelSuccess, setCancelSuccess] = useState('');
 
   // Profile Form State
   const [profileForm, setProfileForm] = useState({
@@ -129,23 +136,21 @@ export default function Account() {
   const loadOrders = async () => {
     setLoadingOrders(true);
     setOrdersError('');
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('ns_stone_token') : null;
+    if (!token) {
+      setLoadingOrders(false);
+      setOrders([]);
+      return;
+    }
     try {
       const data = await fetchMyOrders();
       setOrders(Array.isArray(data) ? data : []);
     } catch (err) {
       console.warn('Orders fetch note:', err.message);
-      // Fallback: check localStorage for any locally placed orders
-      try {
-        const local = localStorage.getItem('ns_stone_local_orders');
-        if (local) {
-          const parsed = JSON.parse(local);
-          setOrders(Array.isArray(parsed) ? parsed : []);
-        } else {
-          setOrders([]);
-        }
-      } catch (e) {
-        setOrders([]);
+      if (err.message && err.message.includes('401')) {
+        setOrdersError('Session expired. Please sign in again to view your orders.');
       }
+      setOrders([]);
     } finally {
       setLoadingOrders(false);
     }
@@ -298,25 +303,44 @@ export default function Account() {
     const matchesSearch =
       !orderSearch ||
       (order.orderNumber || '').toLowerCase().includes(orderSearch.toLowerCase()) ||
-      (order.trackingNumber || '').toLowerCase().includes(orderSearch.toLowerCase());
+      (order.trackingNumber || '').toLowerCase().includes(orderSearch.toLowerCase()) ||
+      (order.orderItems || []).some(item => (item.name || '').toLowerCase().includes(orderSearch.toLowerCase()));
 
     if (!matchesSearch) return false;
 
     if (orderFilter === 'All') return true;
-    if (orderFilter === 'Processing') {
-      return ['Order Placed', 'Confirmed', 'Processing'].includes(order.orderStatus);
-    }
-    if (orderFilter === 'Shipped') {
-      return ['Shipped', 'Out for Delivery'].includes(order.orderStatus);
-    }
-    if (orderFilter === 'Delivered') {
-      return (order.orderStatus || '').toLowerCase() === 'delivered';
-    }
-    if (orderFilter === 'Cancelled') {
-      return (order.orderStatus || '').toLowerCase() === 'cancelled';
-    }
-    return true;
+    return (order.orderStatus || '').toLowerCase() === orderFilter.toLowerCase();
   });
+
+  // Handle customer cancellation
+  const handleConfirmCancelOrder = async e => {
+    e.preventDefault();
+    if (!cancelModalOrder) return;
+    setIsCancelling(true);
+    setCancelError('');
+    setCancelSuccess('');
+
+    try {
+      const updated = await cancelOrderApi(cancelModalOrder._id, cancelReason);
+      setCancelSuccess('Your order has been cancelled successfully.');
+      setOrders(prev => prev.map(o => (o._id === updated._id ? updated : o)));
+      setTimeout(() => {
+        setCancelModalOrder(null);
+        setCancelReason('');
+        setCancelSuccess('');
+      }, 1500);
+    } catch (err) {
+      setCancelError(err.message || 'Failed to cancel order. Please contact support.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  // Helper: check if order can be cancelled by customer
+  const canCustomerCancel = order => {
+    if (!order) return false;
+    return ['Order Placed', 'Confirmed', 'Processing'].includes(order.orderStatus);
+  };
 
   // Selected Order for Details View
   const selectedOrder = selectedOrderId
@@ -943,58 +967,102 @@ export default function Account() {
                     </div>
 
                     {/* Visual Order Tracking Timeline */}
-                    <div className="p-5 sm:p-6 bg-[#F8F8F7] rounded-2xl border border-[#E8E5DF]">
-                      <h4 className="font-['Manrope'] font-bold text-sm text-black mb-5">
-                        Order Status &amp; Tracking
-                      </h4>
-
-                      {/* Timeline Steps */}
-                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-center text-xs">
-                        {[
-                          'Order Placed',
-                          'Confirmed',
-                          'Processing',
-                          'Shipped',
-                          'Out for Delivery',
-                          'Delivered'
-                        ].map((step, idx) => {
-                          const steps = [
-                            'Order Placed',
-                            'Confirmed',
-                            'Processing',
-                            'Shipped',
-                            'Out for Delivery',
-                            'Delivered'
-                          ];
-                          const currentIdx = steps.indexOf(selectedOrder.orderStatus || 'Order Placed');
-                          const isDone = currentIdx >= idx;
-                          const isCurrent = currentIdx === idx;
-
-                          return (
-                            <div key={step} className="flex flex-col items-center">
-                              <div
-                                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs mb-2 transition-all ${
-                                  isDone
-                                    ? 'bg-[#111111] text-[#F5D98A] shadow-xs'
-                                    : 'bg-neutral-200 text-neutral-400'
-                                } ${isCurrent ? 'ring-2 ring-[#D4A83F]' : ''}`}
-                              >
-                                {isDone ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
-                              </div>
-                              <span
-                                className={`text-[11px] font-semibold leading-tight ${
-                                  isDone ? 'text-black' : 'text-neutral-400'
-                                }`}
-                              >
-                                {step}
-                              </span>
-                            </div>
-                          );
-                        })}
+                    <div className="p-5 sm:p-6 bg-[#F8F8F7] rounded-2xl border border-[#E8E5DF] space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-['Manrope'] font-bold text-sm text-black">
+                          Order Status &amp; Tracking Timeline
+                        </h4>
+                        {canCustomerCancel(selectedOrder) && (
+                          <button
+                            onClick={() => {
+                              setCancelModalOrder(selectedOrder);
+                              setCancelReason('');
+                              setCancelError('');
+                              setCancelSuccess('');
+                            }}
+                            className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                          >
+                            Cancel Order
+                          </button>
+                        )}
                       </div>
 
+                      {/* Timeline Steps */}
+                      {selectedOrder.orderStatus === 'Cancelled' ? (
+                        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-center text-xs text-rose-700 space-y-1">
+                          <AlertCircle className="w-6 h-6 text-rose-600 mx-auto mb-1" />
+                          <p className="font-bold text-sm text-rose-800">This order has been cancelled.</p>
+                          {selectedOrder.cancellationReason && (
+                            <p className="text-[11px] text-rose-700">Reason: {selectedOrder.cancellationReason}</p>
+                          )}
+                          <p className="text-[11px] text-rose-500">
+                            {selectedOrder.cancelledAt
+                              ? `Cancelled on ${new Date(selectedOrder.cancelledAt).toLocaleString('en-IN')}`
+                              : 'Cancelled'}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 text-center text-xs pt-2">
+                          {[
+                            { name: 'Order Placed', desc: 'Order received' },
+                            { name: 'Confirmed', desc: 'Order verified' },
+                            { name: 'Processing', desc: 'Preparing goods' },
+                            { name: 'Shipped', desc: 'Dispatched to courier' },
+                            { name: 'Out for Delivery', desc: 'Arriving today' },
+                            { name: 'Delivered', desc: 'Successfully delivered' }
+                          ].map((stepObj, idx) => {
+                            const steps = [
+                              'Order Placed',
+                              'Confirmed',
+                              'Processing',
+                              'Shipped',
+                              'Out for Delivery',
+                              'Delivered'
+                            ];
+                            const currentIdx = steps.indexOf(selectedOrder.orderStatus || 'Order Placed');
+                            const isDone = currentIdx >= idx;
+                            const isCurrent = currentIdx === idx;
+
+                            // Look up timestamp from statusHistory if available
+                            const historyMatch = selectedOrder.statusHistory?.find(h => h.status === stepObj.name);
+
+                            return (
+                              <div key={stepObj.name} className="flex flex-col items-center">
+                                <div
+                                  className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs mb-1.5 transition-all ${
+                                    isDone
+                                      ? 'bg-emerald-600 text-white shadow-xs'
+                                      : 'bg-neutral-200 text-neutral-400'
+                                  } ${isCurrent ? 'ring-3 ring-amber-400' : ''}`}
+                                >
+                                  {isDone ? <CheckCircle2 className="w-5 h-5 text-white" /> : idx + 1}
+                                </div>
+                                <span
+                                  className={`text-xs font-bold leading-tight ${
+                                    isDone ? 'text-black' : 'text-neutral-400'
+                                  }`}
+                                >
+                                  {stepObj.name}
+                                </span>
+                                <span className="text-[10px] text-neutral-500 mt-0.5 leading-snug hidden sm:block">
+                                  {stepObj.desc}
+                                </span>
+                                {historyMatch?.updatedAt && isDone && (
+                                  <span className="text-[9px] text-neutral-400 mt-1 font-mono">
+                                    {new Date(historyMatch.updatedAt).toLocaleDateString('en-IN', {
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       {selectedOrder.trackingNumber && (
-                        <div className="mt-5 pt-4 border-t border-[#E8E5DF] flex items-center justify-between text-xs text-[#777777]">
+                        <div className="mt-4 pt-3 border-t border-[#E8E5DF] flex items-center justify-between text-xs text-[#777777]">
                           <span>
                             Tracking Reference: <strong className="font-mono text-black">{selectedOrder.trackingNumber}</strong>
                           </span>
@@ -1018,23 +1086,30 @@ export default function Account() {
                       <div className="divide-y divide-[#E8E5DF]">
                         {selectedOrder.orderItems?.map((item, idx) => (
                           <div key={idx} className="p-4 flex items-center justify-between gap-3 text-xs sm:text-sm">
-                            <div className="flex items-center gap-3">
-                              <img
-                                src={item.image || '/logo.png'}
-                                alt={item.name}
-                                className="w-12 h-12 object-cover rounded-lg border border-neutral-200"
-                                onError={e => {
-                                  e.target.src = '/logo.png';
-                                }}
-                              />
-                              <div>
-                                <h5 className="font-bold text-black">{item.name}</h5>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-12 h-12 rounded-lg bg-white border border-neutral-200 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                {item.image ? (
+                                  <img
+                                    src={item.image}
+                                    alt={item.name}
+                                    className="w-full h-full object-contain"
+                                    onError={e => {
+                                      e.target.style.display = 'none';
+                                      e.target.parentElement.innerHTML = '<svg class="w-6 h-6 text-neutral-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>';
+                                    }}
+                                  />
+                                ) : (
+                                  <Package className="w-6 h-6 text-neutral-300" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <h5 className="font-bold text-black truncate">{item.name}</h5>
                                 <p className="text-[11px] text-[#777777]">
                                   Qty: {item.quantity} × ₹{item.price?.toLocaleString('en-IN')}
                                 </p>
                               </div>
                             </div>
-                            <div className="font-bold text-black text-right">
+                            <div className="font-bold text-black text-right whitespace-nowrap">
                               ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                             </div>
                           </div>
@@ -1050,9 +1125,13 @@ export default function Account() {
                           <MapPin className="w-3.5 h-3.5 text-[#D4A83F]" />
                           Delivery Address
                         </h4>
-                        <p className="font-semibold text-black">{selectedOrder.customerName}</p>
-                        <p className="text-[#777777]">{selectedOrder.phone}</p>
-                        <p className="text-[#777777] mt-1">{selectedOrder.shippingAddress}</p>
+                        <p className="font-semibold text-black">{selectedOrder.customerName || selectedOrder.shippingAddress?.fullName}</p>
+                        <p className="text-[#777777]">{selectedOrder.phone || selectedOrder.shippingAddress?.phone}</p>
+                        <p className="text-[#777777] mt-1">
+                          {typeof selectedOrder.shippingAddress === 'object' && selectedOrder.shippingAddress !== null
+                            ? `${selectedOrder.shippingAddress.house || ''}, ${selectedOrder.shippingAddress.street || ''}, ${selectedOrder.shippingAddress.city || ''}, ${selectedOrder.shippingAddress.state || ''} - ${selectedOrder.shippingAddress.pincode || ''}`
+                            : selectedOrder.shippingAddress || '—'}
+                        </p>
                       </div>
 
                       {/* Payment & Price Summary */}
@@ -1109,7 +1188,16 @@ export default function Account() {
 
                     {/* Filter Tabs */}
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                      {['All', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map(filter => (
+                      {[
+                        'All',
+                        'Order Placed',
+                        'Confirmed',
+                        'Processing',
+                        'Shipped',
+                        'Out for Delivery',
+                        'Delivered',
+                        'Cancelled'
+                      ].map(filter => (
                         <button
                           key={filter}
                           onClick={() => setOrderFilter(filter)}
@@ -1180,14 +1268,21 @@ export default function Account() {
                               {order.orderItems?.slice(0, 2).map((item, idx) => (
                                 <div key={idx} className="flex items-center justify-between text-xs">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <img
-                                      src={item.image || '/logo.png'}
-                                      alt={item.name}
-                                      className="w-9 h-9 object-cover rounded-lg border border-neutral-200 flex-shrink-0"
-                                      onError={e => {
-                                        e.target.src = '/logo.png';
-                                      }}
-                                    />
+                                    <div className="w-10 h-10 rounded-lg bg-white border border-neutral-200 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                      {item.image ? (
+                                        <img
+                                          src={item.image}
+                                          alt={item.name}
+                                          className="w-full h-full object-contain"
+                                          onError={e => {
+                                            e.target.style.display = 'none';
+                                            e.target.parentElement.innerHTML = '<svg class="w-5 h-5 text-neutral-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>';
+                                          }}
+                                        />
+                                      ) : (
+                                        <Package className="w-5 h-5 text-neutral-300" />
+                                      )}
+                                    </div>
                                     <span className="font-medium text-black truncate">{item.name}</span>
                                     <span className="text-neutral-400">×{item.quantity}</span>
                                   </div>
@@ -1213,14 +1308,28 @@ export default function Account() {
                               </div>
 
                               <div className="flex items-center gap-2">
-                                {order.trackingNumber && (
-                                  <a
-                                    href={`/track-order?orderId=${order.orderNumber}`}
-                                    className="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                                <a
+                                  href={`/track-order?orderId=${order.orderNumber}`}
+                                  className="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1"
+                                >
+                                  <Truck className="w-3.5 h-3.5" />
+                                  <span>Track</span>
+                                </a>
+
+                                {canCustomerCancel(order) && (
+                                  <button
+                                    onClick={() => {
+                                      setCancelModalOrder(order);
+                                      setCancelReason('');
+                                      setCancelError('');
+                                      setCancelSuccess('');
+                                    }}
+                                    className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
                                   >
-                                    Track
-                                  </a>
+                                    Cancel Order
+                                  </button>
                                 )}
+
                                 <button
                                   onClick={() => {
                                     const p = new URLSearchParams(searchParams);
@@ -1685,6 +1794,78 @@ export default function Account() {
                   className="px-5 py-2 rounded-xl bg-black hover:bg-neutral-800 text-[#F5D98A] text-xs font-bold transition-colors cursor-pointer disabled:opacity-60"
                 >
                   {addressSaving ? 'Saving...' : 'Save Address'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          CUSTOMER CANCELLATION CONFIRMATION DIALOG
+          ========================================================================= */}
+      {cancelModalOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-neutral-200 animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-5 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-neutral-800 flex-shrink-0">
+              <h3 className="font-bold text-sm font-['Manrope'] text-white">
+                Cancel Order {cancelModalOrder.orderNumber}
+              </h3>
+              <button
+                onClick={() => setCancelModalOrder(null)}
+                className="p-1 text-neutral-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmCancelOrder} className="p-5 space-y-4 text-xs">
+              <p className="text-neutral-600 leading-relaxed">
+                Are you sure you want to cancel order <strong className="font-mono text-black">{cancelModalOrder.orderNumber}</strong>?
+                This action cannot be undone once confirmed.
+              </p>
+
+              <div>
+                <label className="block text-neutral-700 font-semibold mb-1">
+                  Reason for Cancellation (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={cancelReason}
+                  onChange={e => setCancelReason(e.target.value)}
+                  placeholder="e.g. Ordered by mistake, found another product, delivery timeframe."
+                  className="w-full px-3 py-2 text-xs bg-[#F8F8F7] border border-[#E8E5DF] rounded-xl focus:outline-none focus:border-black resize-none"
+                />
+              </div>
+
+              {cancelError && (
+                <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{cancelError}</span>
+                </div>
+              )}
+
+              {cancelSuccess && (
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                  <span>{cancelSuccess}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-neutral-100">
+                <button
+                  type="button"
+                  onClick={() => setCancelModalOrder(null)}
+                  className="px-3.5 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-xs font-semibold text-neutral-700 cursor-pointer"
+                >
+                  No, Keep Order
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCancelling}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {isCancelling ? 'Cancelling...' : 'Confirm Cancellation'}
                 </button>
               </div>
             </form>

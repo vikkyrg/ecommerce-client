@@ -14,22 +14,24 @@ import { useAuth } from '../context/AuthContext';
 import { createOrder } from '../services/api';
 
 export default function Checkout() {
-  const { cart, cartTotal, couponDiscount, clearCart } = useCart();
+  const { cart, cartTotal, couponDiscount, cartStockError, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const defaultAddr = user?.addresses?.find(a => a.isDefault) || user?.addresses?.[0];
+
   const [formData, setFormData] = useState({
-    fullName: user?.name || '',
+    fullName: defaultAddr?.fullName || user?.name || '',
     email: user?.email || '',
-    phone: user?.phone || '',
-    house: '',
-    street: '',
-    area: '',
-    city: 'Bangalore',
-    state: 'Karnataka',
-    pincode: '560001',
-    landmark: '',
-    addressType: 'Home',
+    phone: defaultAddr?.phone || user?.phone || '',
+    house: defaultAddr?.house || '',
+    street: defaultAddr?.street || '',
+    area: defaultAddr?.area || '',
+    city: defaultAddr?.city || 'Bangalore',
+    state: defaultAddr?.state || 'Karnataka',
+    pincode: defaultAddr?.pincode || '560001',
+    landmark: defaultAddr?.landmark || '',
+    addressType: defaultAddr?.addressType || defaultAddr?.type || 'Home',
     paymentMethod: 'UPI'
   });
 
@@ -75,11 +77,16 @@ export default function Checkout() {
 
   const handleSubmitOrder = async e => {
     e.preventDefault();
+    if (cartStockError) {
+      setError(cartStockError);
+      return;
+    }
     setIsSubmitting(true);
     setError('');
 
     try {
       const orderPayload = {
+        userId: user?._id || user?.id,
         customerName: formData.fullName,
         phone: formData.phone,
         guestEmail: formData.email,
@@ -188,9 +195,59 @@ export default function Checkout() {
 
             {/* Step 2: Delivery Address */}
             <div className="bg-white rounded-2xl p-6 sm:p-7 border border-[#e2e3e1] shadow-2xs space-y-4">
-              <h2 className="font-['Manrope'] font-bold text-lg text-black border-b border-neutral-100 pb-3">
-                2. Shipping &amp; Delivery Address
-              </h2>
+              <div className="border-b border-neutral-100 pb-3 flex items-center justify-between">
+                <h2 className="font-['Manrope'] font-bold text-lg text-black">
+                  2. Shipping &amp; Delivery Address
+                </h2>
+                {user?.addresses && user.addresses.length > 0 && (
+                  <span className="text-[11px] font-semibold text-neutral-500">
+                    Saved addresses available
+                  </span>
+                )}
+              </div>
+
+              {/* Saved Address Quick Selector */}
+              {user?.addresses && user.addresses.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  <label className="block text-xs font-semibold text-neutral-700">
+                    Choose from Saved Addresses:
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {user.addresses.map((addr, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            fullName: addr.fullName || prev.fullName,
+                            phone: addr.phone || prev.phone,
+                            house: addr.house || '',
+                            street: addr.street || '',
+                            city: addr.city || 'Bangalore',
+                            state: addr.state || 'Karnataka',
+                            pincode: addr.pincode || '560001',
+                            addressType: addr.type || addr.addressType || 'Home'
+                          }));
+                        }}
+                        className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${
+                          formData.house === addr.house && formData.pincode === addr.pincode
+                            ? 'border-black bg-neutral-50 ring-1 ring-black'
+                            : 'border-neutral-200 hover:border-neutral-400 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between font-bold text-black mb-1">
+                          <span>{addr.fullName}</span>
+                          <span className="text-[10px] uppercase px-1.5 py-0.2 bg-neutral-200 rounded">
+                            {addr.type || addr.addressType || 'Home'}
+                          </span>
+                        </div>
+                        <p className="text-neutral-600 line-clamp-1">{addr.house}, {addr.street}</p>
+                        <p className="text-neutral-500">{addr.city}, {addr.state} - {addr.pincode}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -312,24 +369,24 @@ export default function Checkout() {
 
           </div>
 
-          {/* Right Summary: Items & Total (5 cols) */}
-          <div className="lg:col-span-5 space-y-5">
-            <div className="bg-white rounded-2xl p-6 border border-[#e2e3e1] shadow-2xs space-y-4">
+          {/* Right Summary: Items & Total (5 cols) - Sticky on Desktop */}
+          <div className="lg:col-span-5 lg:sticky lg:top-[96px] self-start space-y-5">
+            <div className="bg-white rounded-2xl p-5 sm:p-6 border border-[#e2e3e1] shadow-2xs space-y-4 max-h-[calc(100vh-120px)] overflow-y-auto">
               <h3 className="font-['Manrope'] font-bold text-lg text-black border-b border-neutral-100 pb-3">
                 Order Review ({cart.length} items)
               </h3>
 
-              <div className="divide-y divide-neutral-100 max-h-72 overflow-y-auto pr-1">
+              <div className="divide-y divide-neutral-100 max-h-56 sm:max-h-64 overflow-y-auto pr-1 scrollbar-thin">
                 {cart.map(item => (
                   <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <img src={item.image} alt={item.name} className="w-10 h-10 object-contain rounded border border-neutral-200 p-1" />
-                      <div>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img src={item.image} alt={item.name} className="w-10 h-10 object-contain rounded border border-neutral-200 p-1 flex-shrink-0" />
+                      <div className="min-w-0">
                         <span className="font-semibold text-black line-clamp-1 max-w-[180px]">{item.name}</span>
                         <span className="text-[10px] text-neutral-500">Qty: {item.quantity}</span>
                       </div>
                     </div>
-                    <span className="font-bold text-black">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
+                    <span className="font-bold text-black flex-shrink-0">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
                   </div>
                 ))}
               </div>
@@ -362,11 +419,16 @@ export default function Checkout() {
                   {error}
                 </div>
               )}
+              {cartStockError && (
+                <div role="alert" className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg">
+                  {cartStockError}
+                </div>
+              )}
 
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-black hover:bg-neutral-800 text-[#ffdf9c] font-bold text-sm py-4 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                disabled={isSubmitting || Boolean(cartStockError)}
+                className="w-full bg-black hover:bg-neutral-800 text-[#ffdf9c] font-bold text-sm py-4 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <span>{isSubmitting ? 'Placing Order...' : `Place Order (₹${totalPrice.toLocaleString('en-IN')})`}</span>
                 <ArrowRight className="w-4 h-4" />
