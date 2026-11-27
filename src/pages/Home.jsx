@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { fetchCategories, fetchProducts, fetchFeaturedProducts } from '../services/api';
 import CategoryCard from '../components/home/CategoryCard';
+import CategorySkeletonCard from '../components/home/CategorySkeletonCard';
 import ProductCard from '../components/products/ProductCard';
 import ExploreAllProducts from '../components/home/ExploreAllProducts';
 import PromotionalBanner from '../components/home/PromotionalBanner';
@@ -287,16 +288,24 @@ export default function Home() {
             </div>
           </ScrollReveal>
 
-          {/* Centered 3-Column Category Grid: exactly 3 per row on Mobile, Tablet & Desktop (2 rows = 6 items) */}
+          {/* Category Grid: Responsive 2-col on small mobile, 3-col on desktop (6 items total) */}
           <div className="max-w-4xl mx-auto">
-            <StaggerContainer
-              staggerDelay={50}
-              className="grid grid-cols-3 gap-2.5 sm:gap-6 md:gap-8 justify-center items-start"
-            >
-              {categories.slice(0, 6).map(cat => (
-                <CategoryCard key={cat.id || cat.slug || cat._id} category={cat} />
-              ))}
-            </StaggerContainer>
+            {loading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 sm:gap-6 md:gap-8 justify-center items-start">
+                {[0, 1, 2, 3, 4, 5].map(idx => (
+                  <CategorySkeletonCard key={idx} keyIndex={idx} />
+                ))}
+              </div>
+            ) : (
+              <StaggerContainer
+                staggerDelay={50}
+                className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 sm:gap-6 md:gap-8 justify-center items-start"
+              >
+                {categories.slice(0, 6).map(cat => (
+                  <CategoryCard key={cat.id || cat.slug || cat._id} category={cat} />
+                ))}
+              </StaggerContainer>
+            )}
           </div>
         </div>
       </section>
